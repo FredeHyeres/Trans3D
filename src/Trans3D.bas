@@ -35,6 +35,7 @@ End Enum
 ' Chaque classe recoit ces references mais ne les cree pas.
 Public g_oSettings  As CSettings         ' parametres (symbologie, semis, tolerance)
 Public g_oCalc      As CCalcul           ' moteur de calcul pur
+Public g_oMoteur    As CGraphique        ' moteur graphique (creation + apercus)
 Public g_oSelectionCourante As CAltitudeSelection ' derniere cote trouvee (RechercheAltitude)
 
 '==============================================================================
@@ -118,6 +119,7 @@ Public Sub InitialiserContexte()
     g_oSettings.Init
 
     Set g_oCalc = New CCalcul
+    Set g_oMoteur = New CGraphique
     Set g_oSelectionCourante = New CAltitudeSelection
 End Sub
 

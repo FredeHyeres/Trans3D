@@ -204,10 +204,11 @@ Private Function AttachmentAffiche(oAttachment As Object) As Boolean
 End Function
 
 '------------------------------------------------------------------------------
-' Convertit une origine issue d'une reference vers le repere du modele actif.
+' Convertit un point issu d'une reference vers le repere du modele actif.
 ' Sans cette conversion, le clic est compare a des coordonnees locales de la
 ' reference : on detecte alors un texte numerique proche dans le mauvais repere.
-Private Sub TransformerPointVersMaitre(oAttachment As Object, _
+' Public : utilise aussi par CGraphique pour les sommets des elements 2D.
+Public Sub TransformerPointVersMaitre(oAttachment As Object, _
         oPtSource As Point3d, oPtMaster As Point3d)
 
     oPtMaster = oPtSource
