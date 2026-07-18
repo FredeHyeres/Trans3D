@@ -102,6 +102,20 @@ Function EstFerme(oElem As Element) As Boolean
 End Function
 
 '------------------------------------------------------------------------------
+' Nom lisible du type d'element (cadre Etat du formulaire).
+Function NomType(oElem As Element) As String
+    Select Case oElem.Type
+        Case msdElementTypeLine:         NomType = "Ligne"
+        Case msdElementTypeLineString:   NomType = "Ligne brisee"
+        Case msdElementTypeCurve:        NomType = "Courbe"
+        Case msdElementTypeArc:          NomType = "Arc"
+        Case msdElementTypeEllipse:      NomType = "Cercle/Ellipse"
+        Case msdElementTypeBsplineCurve: NomType = "B-spline"
+        Case Else:                       NomType = "Type " & oElem.Type
+    End Select
+End Function
+
+'------------------------------------------------------------------------------
 ' Sommets bruts de l'element dans son propre repere.
 Private Function ExtraireSommets(oElem As Element, ByVal dPasDiscret As Double, _
                                  aPts() As Point3d, nNb As Long) As Boolean
@@ -387,6 +401,9 @@ End Function
 '   - le cercle repere centre en (dXpt, dYpt) au Z reel dZpt
 '   - le texte altitude a Z = 0.00 (regle fixe du cahier des charges),
 '     decale du rayon du cercle pour rester lisible
+' La symbologie (couleur, niveau) est appliquee en mode protege : son echec
+' ne doit pas empecher la creation. Un echec de creation leve une erreur
+' explicite que l'etat de commande capture et affiche.
 Sub CreerPointCote(ByVal dXpt As Double, ByVal dYpt As Double, _
                    ByVal dZpt As Double, _
                    oSettings As CSettings, oCalc As CCalcul)
@@ -398,8 +415,15 @@ Sub CreerPointCote(ByVal dXpt As Double, ByVal dYpt As Double, _
         Set oCercle = CreateEllipseElement2(Nothing, ptCercle, _
                           oSettings.oCercle.Rayon, oSettings.oCercle.Rayon, _
                           Matrix3dIdentity())
+        If oCercle Is Nothing Then
+            Err.Raise vbObjectError + 513, "CGraphique", _
+                      "Creation du cercle impossible (CreateEllipseElement2)"
+        End If
+        On Error Resume Next
         oCercle.Color = oSettings.oCercle.Couleur
         Set oCercle.Level = ResolverNiveau(oSettings.oCercle.NomNiveau)
+        Err.Clear
+        On Error GoTo 0
         ActiveModelReference.AddElement oCercle
     End If
 
@@ -410,7 +434,11 @@ Sub CreerPointCote(ByVal dXpt As Double, ByVal dYpt As Double, _
         ptTexte.Z = 0#          ' regle fixe : texte a l'altitude 0.00
         Dim oTxt As TextElement
         Set oTxt = ConstruireTexteAltitude(ptTexte, dZpt, oSettings, oCalc)
-        If Not oTxt Is Nothing Then ActiveModelReference.AddElement oTxt
+        If oTxt Is Nothing Then
+            Err.Raise vbObjectError + 514, "CGraphique", _
+                      "Creation du texte impossible (CreateTextElement1)"
+        End If
+        ActiveModelReference.AddElement oTxt
     End If
 End Sub
 

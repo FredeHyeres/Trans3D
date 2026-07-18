@@ -56,17 +56,40 @@ Private Sub IPrimitiveCommandEvents_DataPoint(Point As Point3d, ByVal View As Vi
             Exit Sub
         End If
 
-        Dim i As Long
+        ' Les erreurs des evenements de commande sont avalees par V8i sans
+        ' dialogue : on les capture pour les afficher au lieu d'echouer muet.
+        Dim i As Long, nCrees As Long
         Dim dPX As Double, dPY As Double, dPZ As Double
+        Dim sErreur As String
+        nCrees = 0
+        On Error Resume Next
         For i = 0 To nNb - 1
             g_oCalc.PointSurPolyligne3D m_dX, m_dY, m_dZ, m_dS, dSemis(i), _
                                         dPX, dPY, dPZ
+            If Err.Number <> 0 Then
+                sErreur = "calcul (" & Err.Number & ") " & Err.Description
+                Exit For
+            End If
             g_oMoteur.CreerPointCote dPX, dPY, dPZ, g_oSettings, g_oCalc
+            If Err.Number <> 0 Then
+                sErreur = "(" & Err.Number & ") " & Err.Description
+                Exit For
+            End If
+            nCrees = nCrees + 1
         Next
+        On Error GoTo 0
 
-        ShowPrompt nNb & " points crees  |  Cliquez le prochain element" & _
+        If Len(sErreur) > 0 Then
+            ShowPrompt "ERREUR apres " & nCrees & "/" & nNb & _
+                       " points : " & sErreur
+            frmTrans3D.AfficherZ "ERREUR : " & sErreur
+            Exit Sub
+        End If
+
+        ShowPrompt nCrees & " points crees  |  Cliquez le prochain element" & _
                    "  (Reset=quitter)"
         RetourSelection
+        frmTrans3D.AfficherElement nCrees & " points crees"
     End Select
 End Sub
 
@@ -142,12 +165,20 @@ Private Sub SelectionnerElement(Point As Point3d)
     m_dLong = g_oCalc.AbscissesPolyligne3D(m_dX, m_dY, m_dZ, m_dS)
     m_bGeomOk = True
 
-    frmTrans3D.AfficherInfo "Element selectionne  L=" & _
-                            Format$(m_dLong, "0.00") & " m"
+    frmTrans3D.AfficherElement g_oMoteur.NomType(m_oElem) & "   L=" & _
+                               Format$(m_dLong, "0.00") & " m"
+    frmTrans3D.AfficherZ "Z dep = " & FormatZ(m_dZ(LBound(m_dZ))) & _
+                         "   Z fin = " & FormatZ(m_dZ(UBound(m_dZ)))
     ShowPrompt "Element L=" & Format$(m_dLong, "0.00") & _
                " m  |  Data=creer le semis  Reset=abandonner"
     m_nEtape = 2
 End Sub
+
+'------------------------------------------------------------------------------
+Private Function FormatZ(ByVal dZ As Double) As String
+    FormatZ = g_oCalc.FormatAltitude(dZ, g_oSettings.oTexte.Decimales, _
+                                     g_oSettings.oTexte.SepDecimal)
+End Function
 
 '------------------------------------------------------------------------------
 ' Abscisses du semis selon les parametres courants (relus a chaque appel :

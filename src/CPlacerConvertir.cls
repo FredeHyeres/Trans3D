@@ -62,8 +62,11 @@ Private Sub IPrimitiveCommandEvents_DataPoint(Point As Point3d, ByVal View As Vi
 
         AjouterRef 0#, dAltDep
         If m_bFerme Then
+            frmTrans3D.AfficherZ "Z = " & FormatZ(dAltDep) & " (constant)"
             CreerElement3DFinal
         Else
+            frmTrans3D.AfficherZ "Z dep = " & FormatZ(dAltDep) & _
+                                 "   Z fin = -"
             ShowPrompt "Depart Z=" & FormatZ(dAltDep) & _
                        "  |  Cliquez la cote de FIN  (Reset=autre element)"
             m_nEtape = 3
@@ -79,8 +82,9 @@ Private Sub IPrimitiveCommandEvents_DataPoint(Point As Point3d, ByVal View As Vi
         dPente = g_oCalc.PentePctLongueur(m_dZRef(0), dAltFin, m_dLong)
         Dim sPente As String
         sPente = g_oCalc.FormatPente(dPente, g_oSettings.oTexte.SepDecimal)
-        frmTrans3D.AfficherInfo "L=" & Format$(m_dLong, "0.00") & _
-                                " m   Pente=" & sPente
+        frmTrans3D.AfficherZ "Z dep = " & FormatZ(m_dZRef(0)) & _
+                             "   Z fin = " & FormatZ(dAltFin) & _
+                             "   (" & sPente & ")"
         ShowPrompt "Fin Z=" & FormatZ(dAltFin) & "  Pente=" & sPente & _
                    "  |  Data=cote intermediaire  Reset=CREER l'element 3D"
         m_nEtape = 4
@@ -93,6 +97,9 @@ Private Sub IPrimitiveCommandEvents_DataPoint(Point As Point3d, ByVal View As Vi
         Dim dDist As Double, dAbs As Double
         dAbs = g_oCalc.AbscisseProjetee2D(m_dX, m_dY, m_dS, dIX, dIY, dDist)
         AjouterRef dAbs, dAltInt
+        frmTrans3D.AfficherElement g_oMoteur.NomType(m_oElem) & "   L=" & _
+                                   Format$(m_dLong, "0.00") & " m   +" & _
+                                   (m_nNbRef - 2) & " interm."
         ShowPrompt "Intermediaire " & (m_nNbRef - 2) & " : Z=" & _
                    FormatZ(dAltInt) & " a " & Format$(dAbs, "0.00") & _
                    " m  |  Data=autre cote  Reset=CREER l'element 3D"
@@ -134,6 +141,7 @@ Private Sub IPrimitiveCommandEvents_Reset()
 
     Case 3
         m_nNbRef = 0
+        frmTrans3D.AfficherZ "Z dep = -   Z fin = -"
         ShowPrompt "Cliquez la cote de DEPART  (Reset=autre element)"
         m_nEtape = 2
 
@@ -185,8 +193,9 @@ Private Sub SelectionnerElement(Point As Point3d)
     m_nNbRef = 0
     ReDim m_dSRef(0 To 15)
     ReDim m_dZRef(0 To 15)
-    frmTrans3D.AfficherInfo "Element selectionne  L=" & _
-                            Format$(m_dLong, "0.00") & " m"
+    frmTrans3D.AfficherElement g_oMoteur.NomType(m_oElem) & "   L=" & _
+                               Format$(m_dLong, "0.00") & " m"
+    frmTrans3D.AfficherZ "Z dep = -   Z fin = -"
 
     If m_bFerme Then
         ShowPrompt "Element ferme L=" & Format$(m_dLong, "0.00") & _
@@ -258,6 +267,7 @@ Private Sub CreerElement3DFinal()
     ShowPrompt sBilan & "  |  Cliquez le prochain element  (Reset=quitter)"
 
     RetourSelection
+    frmTrans3D.AfficherElement sBilan
 End Sub
 
 '==============================================================================

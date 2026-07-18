@@ -82,7 +82,8 @@ Attribute chkSymboSource.VB_VarHelpID = -1
 Private WithEvents txtTolerance As MSForms.TextBox
 Attribute txtTolerance.VB_VarHelpID = -1
 ' --- Etat ---
-Private lblInfo      As MSForms.Label
+Private lblEtat1     As MSForms.Label   ' element selectionne (type, longueur)
+Private lblEtat2     As MSForms.Label   ' altitudes depart / arrivee
 
 '==============================================================================
 ' Construction des controles
@@ -98,7 +99,7 @@ Private Sub ConstruireControles()
 
     Me.Caption = "Trans3D"
     Me.Width = 212
-    Me.Height = 500
+    Me.Height = 514
 
     Dim dY As Double
     dY = 6
@@ -251,10 +252,10 @@ Private Sub ConstruireControles()
     Set fraEtat = Me.Controls.Add("Forms.Frame.1", "fraEtat")
     fraEtat.Caption = "Etat"
     fraEtat.Left = 6: fraEtat.Top = dY
-    fraEtat.Width = 192: fraEtat.Height = 40
+    fraEtat.Width = 192: fraEtat.Height = 54
 
-    Set lblInfo = CreerLabel(fraEtat, "lblInfo", "-", 6, 12, 180)
-    lblInfo.Height = 24
+    Set lblEtat1 = CreerLabel(fraEtat, "lblEtat1", "-", 6, 12, 180)
+    Set lblEtat2 = CreerLabel(fraEtat, "lblEtat2", "-", 6, 28, 180)
 End Sub
 
 '------------------------------------------------------------------------------
@@ -348,17 +349,25 @@ End Sub
 '==============================================================================
 
 '------------------------------------------------------------------------------
-' Affiche une information d'etat (element selectionne, pente courante...).
-Sub AfficherInfo(sTexte As String)
+' Ligne 1 du cadre Etat : element selectionne (type, longueur).
+Sub AfficherElement(sTexte As String)
     If Not m_bConstruit Then Exit Sub
-    lblInfo.Caption = sTexte
+    lblEtat1.Caption = sTexte
+End Sub
+
+'------------------------------------------------------------------------------
+' Ligne 2 du cadre Etat : altitudes depart / arrivee, pente.
+Sub AfficherZ(sTexte As String)
+    If Not m_bConstruit Then Exit Sub
+    lblEtat2.Caption = sTexte
 End Sub
 
 '------------------------------------------------------------------------------
 ' Appele par les classes de commande au Reset (spec 5.9).
 Sub ReinitialiserEtat()
     If Not m_bConstruit Then Exit Sub
-    lblInfo.Caption = "-"
+    lblEtat1.Caption = "-"
+    lblEtat2.Caption = "-"
 End Sub
 
 '------------------------------------------------------------------------------
