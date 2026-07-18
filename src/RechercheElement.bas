@@ -44,15 +44,34 @@ Public Function TrouverElementProche(oPtClic As Point3d, ByVal dRayon As Double,
                               dRayon, dMinDist, oElemOut, oAttOut
 
     If bAvecReferences Then
-        Dim oAtt As Object
+        ' Iterer par index : le For Each sur Attachments est fragile selon la
+        ' version V8i, il peut echouer sans erreur visible (retour Reseaux).
+        Dim oAttachments As Object
+        Set oAttachments = Nothing
         On Error Resume Next
-        For Each oAtt In ActiveModelReference.Attachments
-            If AttachmentAffiche(oAtt) Then
-                ScannerElementsDansModele oAtt, oAtt, oScan, oPtClic, _
-                                          dRayon, dMinDist, oElemOut, oAttOut
-            End If
-        Next
+        Set oAttachments = ActiveModelReference.Attachments
         On Error GoTo 0
+
+        Dim nCount As Long
+        nCount = 0
+        On Error Resume Next
+        If Not oAttachments Is Nothing Then nCount = oAttachments.Count
+        On Error GoTo 0
+
+        Dim i As Long
+        For i = 1 To nCount
+            Dim oAtt As Object
+            Set oAtt = Nothing
+            On Error Resume Next
+            Set oAtt = oAttachments(i)
+            On Error GoTo 0
+            If Not oAtt Is Nothing Then
+                If AttachmentAffiche(oAtt) Then
+                    ScannerElementsDansModele oAtt, oAtt, oScan, oPtClic, _
+                                              dRayon, dMinDist, oElemOut, oAttOut
+                End If
+            End If
+        Next i
     End If
 
     TrouverElementProche = Not (oElemOut Is Nothing)
@@ -111,7 +130,7 @@ End Function
 '------------------------------------------------------------------------------
 ' Prefiltre : True si le Range de l'element est surement hors du rayon.
 ' Le clic est ramene dans le repere de la reference pour la comparaison.
-' En cas de doute (erreur, echelle illisible) : False, l'element est examine.
+' En cas de doute (erreur) : False, l'element est examine.
 Private Function HorsZone(oElem As Element, oAttachment As Object, _
                           oPtClic As Point3d, ByVal dRayon As Double) As Boolean
     HorsZone = False
@@ -123,13 +142,10 @@ Private Function HorsZone(oElem As Element, oAttachment As Object, _
     Dim ptLocal As Point3d
     TransformerPointVersRef oAttachment, oPtClic, ptLocal
 
-    Dim dRay As Double
-    dRay = dRayon / EchelleAtt(oAttachment)
-
-    If ptLocal.X < oRng.Low.X - dRay Then HorsZone = True: Exit Function
-    If ptLocal.X > oRng.High.X + dRay Then HorsZone = True: Exit Function
-    If ptLocal.Y < oRng.Low.Y - dRay Then HorsZone = True: Exit Function
-    If ptLocal.Y > oRng.High.Y + dRay Then HorsZone = True: Exit Function
+    If ptLocal.X < oRng.Low.X - dRayon Then HorsZone = True: Exit Function
+    If ptLocal.X > oRng.High.X + dRayon Then HorsZone = True: Exit Function
+    If ptLocal.Y < oRng.Low.Y - dRayon Then HorsZone = True: Exit Function
+    If ptLocal.Y > oRng.High.Y + dRayon Then HorsZone = True: Exit Function
     Exit Function
 Inconnu:
     HorsZone = False
@@ -137,7 +153,9 @@ End Function
 
 '------------------------------------------------------------------------------
 ' Inverse de TransformerPointVersMaitre : ramene un point du repere du modele
-' actif dans le repere de la reference (origines + echelle, comme l'aller).
+' actif dans le repere de la reference. Translation seule, comme l'aller :
+' le ScaleFactor est une echelle graphique du contenu, pas des positions
+' (piege verifie sur DGN reel, cf. RechercheAltitude.bas).
 Private Sub TransformerPointVersRef(oAttachment As Object, _
         oPtMaster As Point3d, oPtRef As Point3d)
 
@@ -146,9 +164,7 @@ Private Sub TransformerPointVersRef(oAttachment As Object, _
 
     Dim ptRefOrigin As Point3d
     Dim ptMasterOrigin As Point3d
-    Dim dScale As Double
 
-    dScale = 1#
     ptRefOrigin.X = 0#: ptRefOrigin.Y = 0#: ptRefOrigin.Z = 0#
     ptMasterOrigin.X = 0#: ptMasterOrigin.Y = 0#: ptMasterOrigin.Z = 0#
 
@@ -164,30 +180,12 @@ Private Sub TransformerPointVersRef(oAttachment As Object, _
         Err.Clear
         ptMasterOrigin.X = 0#: ptMasterOrigin.Y = 0#: ptMasterOrigin.Z = 0#
     End If
-
-    dScale = CDbl(oAttachment.ScaleFactor)
-    If Err.Number <> 0 Or Abs(dScale) < 0.0000000001 Then
-        Err.Clear
-        dScale = 1#
-    End If
     On Error GoTo 0
 
-    oPtRef.X = ptRefOrigin.X + (oPtMaster.X - ptMasterOrigin.X) / dScale
-    oPtRef.Y = ptRefOrigin.Y + (oPtMaster.Y - ptMasterOrigin.Y) / dScale
-    oPtRef.Z = ptRefOrigin.Z + (oPtMaster.Z - ptMasterOrigin.Z) / dScale
+    oPtRef.X = ptRefOrigin.X + (oPtMaster.X - ptMasterOrigin.X)
+    oPtRef.Y = ptRefOrigin.Y + (oPtMaster.Y - ptMasterOrigin.Y)
+    oPtRef.Z = ptRefOrigin.Z + (oPtMaster.Z - ptMasterOrigin.Z)
 End Sub
-
-'------------------------------------------------------------------------------
-Private Function EchelleAtt(oAttachment As Object) As Double
-    EchelleAtt = 1#
-    If oAttachment Is Nothing Then Exit Function
-    On Error Resume Next
-    Dim dS As Double
-    dS = CDbl(oAttachment.ScaleFactor)
-    If Err.Number = 0 And Abs(dS) > 0.0000000001 Then EchelleAtt = dS
-    Err.Clear
-    On Error GoTo 0
-End Function
 
 '------------------------------------------------------------------------------
 Private Function AttachmentAffiche(oAttachment As Object) As Boolean

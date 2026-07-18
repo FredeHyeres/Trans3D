@@ -40,14 +40,33 @@ Function TrouverTexteProche(oPt As Point3d, dRayon As Double) As TextElement
 
     ScannerAltitudeDansModele ActiveModelReference, Nothing, oScan, oPt, dMinDist, oBest
 
-    Dim oAtt As Object
+    ' Iterer par index : le For Each sur Attachments est fragile selon la
+    ' version V8i, il peut echouer sans erreur visible (retour Reseaux).
+    Dim oAttachments As Object
+    Set oAttachments = Nothing
     On Error Resume Next
-    For Each oAtt In ActiveModelReference.Attachments
-        If AttachmentAffiche(oAtt) Then
-            ScannerAltitudeDansModele oAtt, oAtt, oScan, oPt, dMinDist, oBest
-        End If
-    Next
+    Set oAttachments = ActiveModelReference.Attachments
     On Error GoTo 0
+
+    Dim nCount As Long
+    nCount = 0
+    On Error Resume Next
+    If Not oAttachments Is Nothing Then nCount = oAttachments.Count
+    On Error GoTo 0
+
+    Dim i As Long
+    For i = 1 To nCount
+        Dim oAtt As Object
+        Set oAtt = Nothing
+        On Error Resume Next
+        Set oAtt = oAttachments(i)
+        On Error GoTo 0
+        If Not oAtt Is Nothing Then
+            If AttachmentAffiche(oAtt) Then
+                ScannerAltitudeDansModele oAtt, oAtt, oScan, oPt, dMinDist, oBest
+            End If
+        End If
+    Next i
 
     If g_oSelectionCourante Is Nothing Then Set g_oSelectionCourante = New CAltitudeSelection
     g_oSelectionCourante.CopierDepuis oBest
@@ -208,6 +227,14 @@ End Function
 ' Sans cette conversion, le clic est compare a des coordonnees locales de la
 ' reference : on detecte alors un texte numerique proche dans le mauvais repere.
 ' Public : utilise aussi par CGraphique pour les sommets des elements 2D.
+'
+' PIEGE (verifie sur DGN reel, module Reseaux d'InterpolationTopo puis
+' premier test Trans3D) : MicroStation renvoie les coordonnees scannees dans
+' un espace DEJA compatible avec le master. Le ScaleFactor de l'attachement
+' est une echelle graphique du CONTENU (taille visuelle), pas des positions :
+' l'appliquer decale et dilate tout (detection impossible sous une tolerance
+' enorme, elements crees a la mauvaise echelle). On applique uniquement la
+' translation MasterOrigin - ReferenceOrigin.
 Public Sub TransformerPointVersMaitre(oAttachment As Object, _
         oPtSource As Point3d, oPtMaster As Point3d)
 
@@ -216,9 +243,7 @@ Public Sub TransformerPointVersMaitre(oAttachment As Object, _
 
     Dim ptRefOrigin As Point3d
     Dim ptMasterOrigin As Point3d
-    Dim dScale As Double
 
-    dScale = 1#
     ptRefOrigin.X = 0#: ptRefOrigin.Y = 0#: ptRefOrigin.Z = 0#
     ptMasterOrigin.X = 0#: ptMasterOrigin.Y = 0#: ptMasterOrigin.Z = 0#
 
@@ -236,17 +261,11 @@ Public Sub TransformerPointVersMaitre(oAttachment As Object, _
         Err.Clear
         ptMasterOrigin.X = 0#: ptMasterOrigin.Y = 0#: ptMasterOrigin.Z = 0#
     End If
-
-    dScale = CDbl(oAttachment.ScaleFactor)
-    If Err.Number <> 0 Or Abs(dScale) < 0.0000000001 Then
-        Err.Clear
-        dScale = 1#
-    End If
     On Error GoTo 0
 
-    oPtMaster.X = ptMasterOrigin.X + (oPtSource.X - ptRefOrigin.X) * dScale
-    oPtMaster.Y = ptMasterOrigin.Y + (oPtSource.Y - ptRefOrigin.Y) * dScale
-    oPtMaster.Z = ptMasterOrigin.Z + (oPtSource.Z - ptRefOrigin.Z) * dScale
+    oPtMaster.X = ptMasterOrigin.X + (oPtSource.X - ptRefOrigin.X)
+    oPtMaster.Y = ptMasterOrigin.Y + (oPtSource.Y - ptRefOrigin.Y)
+    oPtMaster.Z = ptMasterOrigin.Z + (oPtSource.Z - ptRefOrigin.Z)
 End Sub
 
 '------------------------------------------------------------------------------

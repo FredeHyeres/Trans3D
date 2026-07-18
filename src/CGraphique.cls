@@ -318,13 +318,13 @@ Function CreerArc3DZConstant(oArcSource As Element, ByVal dZ As Double, _
     TransformerPointVersMaitre oAttachment, ptC, ptCM
     ptCM.Z = dZ
 
-    Dim dEchelle As Double
-    dEchelle = EchelleAttachment(oAttachment)
-
+    ' Rayons repris tels quels : les coordonnees et dimensions scannees sont
+    ' deja compatibles master (le ScaleFactor est une echelle graphique,
+    ' cf. TransformerPointVersMaitre dans RechercheAltitude.bas)
     Dim oNouv As ArcElement
     Set oNouv = CreateArcElement2(Nothing, ptCM, _
-                    oArc.PrimaryRadius * dEchelle, _
-                    oArc.SecondaryRadius * dEchelle, _
+                    oArc.PrimaryRadius, _
+                    oArc.SecondaryRadius, _
                     oArc.Rotation, oArc.StartAngle, oArc.SweepAngle)
     AppliquerSymbologie oNouv, oArcSource, oSettings
     ActiveModelReference.AddElement oNouv
@@ -366,13 +366,10 @@ Function CreerCercle3DZConstant(oEllSource As Element, ByVal dZ As Double, _
     TransformerPointVersMaitre oAttachment, ptC, ptCM
     ptCM.Z = dZ
 
-    Dim dEchelle As Double
-    dEchelle = EchelleAttachment(oAttachment)
-
     Dim oNouv As EllipseElement
     Set oNouv = CreateEllipseElement2(Nothing, ptCM, _
-                    oEll.PrimaryRadius * dEchelle, _
-                    oEll.SecondaryRadius * dEchelle, oEll.Rotation)
+                    oEll.PrimaryRadius, _
+                    oEll.SecondaryRadius, oEll.Rotation)
     AppliquerSymbologie oNouv, oEllSource, oSettings
     ActiveModelReference.AddElement oNouv
     Set CreerCercle3DZConstant = oNouv
@@ -666,19 +663,6 @@ Private Function ResolverNiveau(sNiveau As String) As Level
         Next
     End If
     If Not oLvl Is Nothing Then Set ResolverNiveau = oLvl
-End Function
-
-'------------------------------------------------------------------------------
-' Facteur d'echelle d'un attachement (1.0 si Nothing ou illisible).
-Private Function EchelleAttachment(oAttachment As Object) As Double
-    EchelleAttachment = 1#
-    If oAttachment Is Nothing Then Exit Function
-    On Error Resume Next
-    Dim dS As Double
-    dS = CDbl(oAttachment.ScaleFactor)
-    If Err.Number = 0 And Abs(dS) > 0.0000000001 Then EchelleAttachment = dS
-    Err.Clear
-    On Error GoTo 0
 End Function
 
 '------------------------------------------------------------------------------

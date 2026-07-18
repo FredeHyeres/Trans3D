@@ -220,6 +220,16 @@ avant de coder.
 
 - Convertir systematiquement les coordonnees des elements de reference
   dans le **repere du modele actif** avant tout calcul.
+- **ScaleFactor n'est PAS une transformation de coordonnees** (verifie sur
+  DGN reel : module Reseaux d'InterpolationTopo, puis premier test Trans3D).
+  Les coordonnees scannees d'une reference sont deja compatibles master ;
+  le ScaleFactor est l'echelle graphique du contenu. L'appliquer aux
+  positions rend la detection impossible (tolerance x500 necessaire) et
+  cree les elements a la mauvaise echelle. Conversion correcte :
+  translation seule `MasterOrigin - ReferenceOrigin`.
+- **Iterer les attachements par index** (`For i = 1 To Attachments.Count`) :
+  le `For Each` sur Attachments echoue sans erreur visible selon la
+  version V8i (retour Reseaux).
 - Gerer les references **2D attachees a un fichier 3D** (Z absent).
 - Verifier que la reference est affichee avant de la scanner
   (`AttachmentAffiche`), et entourer l'iteration des attachements de
