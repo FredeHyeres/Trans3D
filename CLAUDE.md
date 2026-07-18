@@ -32,5 +32,8 @@ et `New`.
 
 ## Lancement
 
-Key-in MicroStation : `vba run [Trans3D]<NomCommande>` (a definir avec le
-cahier des charges).
+Key-ins MicroStation (cahier des charges valide, cf. spec section 1) :
+
+- `vba run [Trans3D]Convertir` : element 2D de reference -> element 3D
+- `vba run [Trans3D]Semer` : semis d'altitudes le long d'un element 3D
+- `vba run [Trans3D]Points` : point 3D depuis position 2D + altitude

@@ -7,19 +7,70 @@ References detaillees : `docs/Guide_Dev_MicroStation_VBA.md` et
 
 ---
 
-## 1. Cahier des charges (a remplir)
+## 1. Cahier des charges (valide le 2026-07-18)
+
+### 1.0 Vision
+
+L'utilisateur travaille dans un **fichier MicroStation 3D actif** avec un ou
+plusieurs **fichiers 2D en reference** (plans topo/VRD cotes). Trans3D
+fournit les outils pour passer du plan 2D a la modelisation 3D :
+conversion d'elements 2D en elements 3D, semis d'altitudes le long des
+elements 3D, creation de points 3D isoles. La presentation (textes,
+cercles) est **uniforme quelle que soit la reference source**, definie au
+depart dans le formulaire et modifiable a tout moment.
+
+Trois commandes partagent le meme formulaire modeless, `CSettings`,
+`CCalcul` et `CGraphique`. L'architecture doit permettre d'ajouter des
+commandes au fur et a mesure (chaines complexes, contenu de cellules,
+maillage... envisages plus tard).
+
+### 1.1 Commande Convertir (element 2D -> element 3D)
 
 | Rubrique | Contenu |
 |---|---|
-| Nom de la commande | *(ex. `MaCommande`)* |
-| Key-in | `vba run [MonProjetV1]MaCommande` |
-| Objectif metier | *(que produit la commande dans le DGN ?)* |
-| Entrees utilisateur | *(clics, snaps, selections de textes/cellules/tags ?)* |
-| Elements crees | *(textes, cercles, lignes, cellules ? avec quelle symbologie ?)* |
-| Parametres reglables | *(liste des champs du formulaire)* |
-| Enchainement | *(sequence des etats : selection -> placement -> repetition)* |
-| Comportement Reset | *(a chaque etape : remonter d'un cran / sauter / quitter)* |
-| Sources d'altitude | *(modele actif seul ou references attachees aussi ?)* |
+| Key-in | `vba run [Trans3D]Convertir` |
+| Objectif metier | Creer dans le modele actif 3D l'equivalent 3D d'un element 2D d'une reference, avec altitudes interpolees |
+| Types acceptes | Ligne, ligne brisee, arc, courbe, B-spline, cercle, ellipse |
+| Acquisition des altitudes | Clic pres d'un texte/cellule/tag d'altitude du plan 2D (lecture auto type `RechercheAltitude`), repli saisie/correction au formulaire |
+| Altitudes | Depart + fin + intermediaires optionnelles (0..N, ex. regards). Cercle/ellipse complet : Z constant, une seule altitude |
+| Interpolation | Lineaire sur **abscisse curviligne** (longueur developpee, pas la corde) ; par troncons si altitudes intermediaires |
+| Element cree | **Type conserve si possible** : ligne -> ligne 3D, ligne brisee -> ligne brisee 3D (Z aux sommets), arc/cercle/ellipse a Z constant -> type natif horizontal. Arc/courbe/B-spline avec pente -> polyligne 3D discretisee au pas parametrable |
+| Symbologie | Duplication de l'element source par defaut (niveau cree dans le fichier actif s'il n'existe pas) ; bascule formulaire "attributs actifs" |
+| Enchainement | 1) selection element 2D -> 2) clic Z depart -> 3) clic Z fin -> 4) Data = ajouter une altitude intermediaire, Reset = creer l'element -> retour a 1 |
+| Comportement Reset | Etape 4 : valider/creer. Etapes 2-3 : remonter d'un cran. Etape 1 : quitter la commande |
+| Apercu dynamique | Complet : surlignage de l'element 2D selectionne, apercu de l'element 3D pendant la saisie, pente courante affichee au formulaire |
+
+### 1.2 Commande Semer (altitudes le long d'un element 3D)
+
+| Rubrique | Contenu |
+|---|---|
+| Key-in | `vba run [Trans3D]Semer` |
+| Objectif metier | Materialiser des points cotes le long d'un element lineaire 3D |
+| Cible | **Tout element lineaire du modele actif** (issu de Trans3D ou non) ; Z interpole sur la geometrie 3D reelle de l'element |
+| Modes de repartition | a) distance fixe (ex. 0,50 m) : point au depart, puis tous les pas, point a la fin meme si dernier intervalle plus court ; b) N points a parts egales (longueur / N) |
+| Objets crees par point | **Cercle repere au Z reel** (le point exploitable pour la modelisation) + **texte d'altitude a Z=0.00** (lisible en vue top sans surcharger le modele). Chacun activable au formulaire |
+| Apercu dynamique | Apercu des points semes suivant les parametres |
+
+### 1.3 Commande Points (point 3D depuis le plan 2D)
+
+| Rubrique | Contenu |
+|---|---|
+| Key-in | `vba run [Trans3D]Points` |
+| Objectif metier | Creer un point 3D a partir d'une position 2D et d'une altitude du plan |
+| Geste | Deux temps : 1) clic/snap = position XY exacte (sommet, intersection...) -> 2) clic sur la cote (texte/cellule/tag) ou saisie du Z |
+| Objets crees | Identiques a Semer : cercle repere au Z reel + texte d'altitude a Z=0.00 |
+| Enchainement | Repetitif : position -> altitude -> creation -> position... Reset : remonter d'un cran / quitter a la premiere etape |
+
+### 1.4 Reglages communs (formulaire modeless)
+
+| Rubrique | Contenu |
+|---|---|
+| Presentation textes | Mode **duplication** (reprendre le style du texte source de la reference) ou mode **creation** (police, taille, couleur, masque/background, niveau definis). Applique uniformement a toutes les creations, quel que soit le fichier de reference |
+| Format altitude | Decimales parametrables (defaut 2), separateur point ou virgule (defaut point). La lecture des cotes 2D accepte les deux separateurs |
+| Cercle repere | Diametre et symbologie parametrables (`CSymboCercle`) |
+| Discretisation | Pas de discretisation des courbes pentues (Convertir) |
+| Sources d'altitude | Modele actif **et** references attachees (textes, cellules, tags) |
+| Regle Z | Le Z des elements 3D et des cercles = altitude calculee ; le Z des textes = 0.00 (voulu). Jamais le Z du point snappe |
 
 ---
 

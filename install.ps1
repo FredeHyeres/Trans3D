@@ -1,15 +1,15 @@
 # ==============================================================================
-# Interpolation Topo - installation automatique (MicroStation V8i SS3)
+# Trans3D - installation automatique (MicroStation V8i SS3)
 #
-# Copie le projet VBA (.mvba) et la boite a outils (.dgnlib) au bon endroit,
-# puis configure le chargement automatique du projet au demarrage.
+# Copie le projet VBA (Trans3D.mvba) dans Standards\vba du workspace, puis
+# configure le chargement automatique du projet au demarrage.
 #
 # Usage : clic droit sur install.cmd > Executer  (ou .\install.ps1 en PowerShell)
-# Relançable sans risque : chaque etape est ignoree si deja faite.
+# Relancable sans risque : chaque etape est ignoree si deja faite.
 # ==============================================================================
 
 $ErrorActionPreference = "Stop"
-Write-Host "=== Installation Interpolation Topo ===" -ForegroundColor Cyan
+Write-Host "=== Installation Trans3D ===" -ForegroundColor Cyan
 
 # --- 0. Emplacements ---------------------------------------------------------
 $Source    = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -29,21 +29,22 @@ if (-not (Test-Path $Workspace)) {
 }
 Write-Host "Workspace : $Workspace"
 
-# --- 1. Installer le projet VBA (InterpolationTopo.mvba dedie) ---------------
+# --- 1. Installer le projet VBA (Trans3D.mvba dedie) -------------------------
 # Le Default.mvba existe deja sur tout MicroStation et ne doit jamais etre
-# ecrase : la macro est donc livree dans son propre projet InterpolationTopo.mvba,
-# copie dans le workspace et charge automatiquement via le .ucf (etape 3).
-$Mvba = Join-Path $Source "Interpolation.mvba"
+# ecrase : la macro est livree dans son propre projet Trans3D.mvba, copie
+# dans le workspace et charge automatiquement via le .ucf (etape 2).
+$Mvba = Join-Path $Source "Trans3D.mvba"
 $VbaDir = Join-Path $Workspace "Standards\vba"
 $MvbaOk = $false
 if (Test-Path $Mvba) {
     New-Item -ItemType Directory -Force $VbaDir | Out-Null
     Copy-Item $Mvba $VbaDir -Force
     $MvbaOk = $true
-    Write-Host "[OK] Interpolation.mvba copie vers $VbaDir" -ForegroundColor Green
+    Write-Host "[OK] Trans3D.mvba copie vers $VbaDir" -ForegroundColor Green
 } else {
-    Write-Host "[!] Interpolation.mvba absent du dossier d'installation :" -ForegroundColor Yellow
-    Write-Host "    importez les fichiers de src\v2\ dans un projet VBA (voir README)."
+    Write-Host "[!] Trans3D.mvba absent du dossier d'installation :" -ForegroundColor Yellow
+    Write-Host "    importez les fichiers de src\ dans un projet VBA nomme Trans3D,"
+    Write-Host "    enregistrez le .mvba a la racine du depot, puis relancez."
 }
 
 # --- 1b. Neutraliser les copies masquantes dans les projets MicroStation -----
@@ -53,7 +54,7 @@ if (Test-Path $Mvba) {
 if ($MvbaOk) {
     $ProjetsDir = Join-Path $Workspace "Projects"
     if (Test-Path $ProjetsDir) {
-        $Masquantes = @(Get-ChildItem $ProjetsDir -Recurse -Filter "Interpolation.mvba" -File -ErrorAction SilentlyContinue)
+        $Masquantes = @(Get-ChildItem $ProjetsDir -Recurse -Filter "Trans3D.mvba" -File -ErrorAction SilentlyContinue)
         foreach ($M in $Masquantes) {
             $Bak = "$($M.FullName).bak"
             if (Test-Path $Bak) { Remove-Item $Bak -Force }
@@ -66,46 +67,7 @@ if ($MvbaOk) {
     }
 }
 
-# --- 2. Copier la boite a outils (.dgnlib) -----------------------------------
-$Dgnlib = Join-Path $Source "MesMacros.dgnlib"
-$GuiDir = Join-Path $Workspace "System\GUI"
-if (Test-Path $Dgnlib) {
-    if (-not (Test-Path $GuiDir)) {
-        Write-Host "[!] Dossier System\GUI introuvable : dgnlib non copiee." -ForegroundColor Yellow
-    } else {
-        Copy-Item $Dgnlib $GuiDir -Force
-        Write-Host "[OK] MesMacros.dgnlib (ToolBox) copiee vers $GuiDir" -ForegroundColor Green
-    }
-} else {
-    Write-Host "[!] MesMacros.dgnlib absente : pas de ToolBox installee." -ForegroundColor Yellow
-}
-
-# --- 2b. Neutraliser les copies masquantes de la ToolBox ---------------------
-# MicroStation charge TOUS les *.dgnlib du dossier d'interface
-# (WorkSpace\Interfaces\MicroStation\<interface>\) et du dossier dgnlib du
-# projet actif (gui.cfg + .pcf) : une vieille copie -- meme renommee en
-# MesMacros_old.dgnlib -- serait chargee en plus de celle de System\GUI et
-# creerait une toolbox en double impossible a modifier. On renomme en .bak
-# (extension differente = plus jamais chargee, aucune suppression).
-if (Test-Path $Dgnlib) {
-    $Masquantes = @()
-    foreach ($Dir in @((Join-Path $Workspace "Interfaces"), (Join-Path $Workspace "Projects"))) {
-        if (Test-Path $Dir) {
-            $Masquantes += @(Get-ChildItem $Dir -Recurse -Filter "MesMacros*.dgnlib" -File -ErrorAction SilentlyContinue)
-        }
-    }
-    foreach ($M in $Masquantes) {
-        $Bak = "$($M.FullName).bak"
-        if (Test-Path $Bak) { Remove-Item $Bak -Force }
-        Rename-Item $M.FullName $Bak
-        Write-Host "[OK] ToolBox masquante neutralisee : $($M.FullName) -> .bak" -ForegroundColor Yellow
-    }
-    if ($Masquantes.Count -eq 0) {
-        Write-Host "[OK] Aucune copie masquante de MesMacros*.dgnlib" -ForegroundColor Green
-    }
-}
-
-# --- 3. Chargement automatique du projet (fichier .ucf utilisateur) ----------
+# --- 2. Chargement automatique du projet (fichier .ucf utilisateur) ----------
 if ($MvbaOk) {
     $UsersDir = Join-Path $Workspace "Users"
     $UcfFiles = @()
@@ -115,16 +77,16 @@ if ($MvbaOk) {
     if ($UcfFiles.Count -eq 0) {
         Write-Host "[!] Aucun fichier .ucf dans $UsersDir : configurez l'autoload" -ForegroundColor Yellow
         Write-Host "    dans MicroStation (Utilities > Macros > Project Manager >"
-        Write-Host "    clic droit sur InterpolationTopo > Autoload)."
+        Write-Host "    clic droit sur Trans3D > Autoload)."
     } else {
         foreach ($UcfFile in $UcfFiles) {
             $Contenu = Get-Content $UcfFile.FullName -Raw
-            if ($Contenu -match "MS_VBAAUTOLOADPROJECTS.*Interpolation") {
+            if ($Contenu -match "MS_VBAAUTOLOADPROJECTS.*Trans3D") {
                 Write-Host "[OK] Autoload deja configure dans $($UcfFile.Name)" -ForegroundColor Green
             } else {
-                $Lignes = "`r`n# --- Interpolation Topo (ajoute par install.ps1) ---`r`n" + `
+                $Lignes = "`r`n# --- Trans3D (ajoute par install.ps1) ---`r`n" + `
                           "MS_VBASEARCHDIRECTORIES < $VbaDir\`r`n" + `
-                          "MS_VBAAUTOLOADPROJECTS > Interpolation.mvba`r`n"
+                          "MS_VBAAUTOLOADPROJECTS > Trans3D.mvba`r`n"
                 Add-Content -Path $UcfFile.FullName -Value $Lignes -Encoding ASCII
                 Write-Host "[OK] Autoload configure dans $($UcfFile.Name)" -ForegroundColor Green
             }
@@ -132,14 +94,13 @@ if ($MvbaOk) {
     }
 }
 
-# --- 4. Recapitulatif --------------------------------------------------------
+# --- 3. Recapitulatif --------------------------------------------------------
 Write-Host ""
 Write-Host "=== Installation terminee ===" -ForegroundColor Cyan
-Write-Host "1. (Re)demarrez MicroStation"
-Write-Host "2. La ToolBox : Workspace > Customize doit lister MesMacros.dgnlib ;"
-Write-Host "   ouvrez la ToolBox via clic droit > Open si elle n'apparait pas."
-Write-Host "3. Key-in Interpolation :      vba run [InterpolationTopoV2]InterpolerPoint"
-Write-Host "4. Key-in Interpol. Ponctuelle: vba run [InterpolationTopoV2]InterpolPonctuelle"
-Write-Host "5. Affectation touches : Utilitaires > Touches de fonction (ex. F6 / F7)"
+Write-Host "1. (Re)demarrez MicroStation et ouvrez le fichier 3D de travail"
+Write-Host "2. Key-in Convertir : vba run [Trans3D]Convertir"
+Write-Host "3. Key-in Semer     : vba run [Trans3D]Semer"
+Write-Host "4. Key-in Points    : vba run [Trans3D]Points"
+Write-Host "5. Affectation touches : Utilitaires > Touches de fonction (ex. F6/F7/F8)"
 Write-Host ""
 Read-Host "Appuyez sur Entree pour fermer"

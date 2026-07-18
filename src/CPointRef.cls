@@ -17,7 +17,7 @@ Attribute VB_Exposed = False
 ' stockees en trois Double ; la conversion vers Point3d se fait par des Sub
 ' avec parametre de sortie (jamais de retour UDT sur ce poste).
 '
-' Le parsing du texte est delegue a CInterpolation.
+' Le parsing du texte est delegue a CCalcul.
 '==============================================================================
 Option Explicit
 

@@ -5,7 +5,7 @@ Attribute VB_Name = "RechercheAltitude"
 ' Detecte le texte, tag ou cellule numerique le plus proche d'un clic, dans le
 ' modele actif et dans les references attachees (coordonnees converties dans le
 ' repere du modele actif). Le resultat complet est memorise dans
-' g_oSelectionCourante (voir InterpolationTopoV2.bas pour les globals).
+' g_oSelectionCourante (voir Trans3D.bas pour les globals).
 '
 ' Fonctions publiques :
 '   TrouverAltitudeProche : point d'entree utilise par les classes de commande
