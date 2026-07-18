@@ -49,9 +49,7 @@ Sub Convertir()
     InitialiserContexte
 
     ' TODO (etape suivante) : AfficherFormulaire frmTrans3D
-    ' TODO (etape suivante) : CommandState.StartPrimitive New CPlacerConvertir
-    ShowCommand "Trans3D - Convertir"
-    ShowPrompt "Machine a etats en cours de developpement"
+    CommandState.StartPrimitive New CPlacerConvertir
 End Sub
 
 '------------------------------------------------------------------------------
@@ -61,9 +59,7 @@ Sub Semer()
     InitialiserContexte
 
     ' TODO (etape suivante) : AfficherFormulaire frmTrans3D
-    ' TODO (etape suivante) : CommandState.StartPrimitive New CPlacerSemis
-    ShowCommand "Trans3D - Semer"
-    ShowPrompt "Machine a etats en cours de developpement"
+    CommandState.StartPrimitive New CPlacerSemis
 End Sub
 
 '------------------------------------------------------------------------------
@@ -73,9 +69,7 @@ Sub Points()
     InitialiserContexte
 
     ' TODO (etape suivante) : AfficherFormulaire frmTrans3D
-    ' TODO (etape suivante) : CommandState.StartPrimitive New CPlacerPoints
-    ShowCommand "Trans3D - Points"
-    ShowPrompt "Machine a etats en cours de developpement"
+    CommandState.StartPrimitive New CPlacerPoints
 End Sub
 
 '==============================================================================

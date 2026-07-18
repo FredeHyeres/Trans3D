@@ -424,6 +424,77 @@ Sub CalculerZPolyligne(dS() As Double, dSRef() As Double, dZRef() As Double, _
 End Sub
 
 '------------------------------------------------------------------------------
+' Insere dans la polyligne un sommet a chaque abscisse de dSIns qui n'y figure
+' pas deja (tolerance DIST_MIN, bornes exclues). Les tableaux dX/dY/dS sont
+' reconstruits 0-based. Necessaire avant CalculerZPolyligne : sans sommet a
+' l'abscisse d'une reference intermediaire, le changement de pente serait
+' perdu (ex. ligne droite de 2 sommets avec un regard au milieu).
+Sub InsererAbscisses(dX() As Double, dY() As Double, dS() As Double, _
+                     dSIns() As Double, ByVal nNbIns As Long)
+    Dim dX0() As Double, dY0() As Double, dS0() As Double
+    dX0 = dX: dY0 = dY: dS0 = dS
+
+    Dim nLo As Long, nHi As Long, nNb0 As Long
+    nLo = LBound(dS0): nHi = UBound(dS0)
+    nNb0 = nHi - nLo + 1
+    Dim dLong As Double
+    dLong = dS0(nHi)
+
+    Dim dTous() As Double
+    ReDim dTous(0 To nNb0 + nNbIns - 1)
+    Dim n As Long, i As Long, j As Long
+    For i = nLo To nHi
+        dTous(i - nLo) = dS0(i)
+    Next
+    n = nNb0
+
+    For i = 0 To nNbIns - 1
+        Dim dV As Double
+        dV = dSIns(i)
+        If dV > DIST_MIN And dV < dLong - DIST_MIN Then
+            Dim bExiste As Boolean
+            bExiste = False
+            For j = 0 To n - 1
+                If Abs(dTous(j) - dV) < DIST_MIN Then
+                    bExiste = True
+                    Exit For
+                End If
+            Next
+            If Not bExiste Then
+                dTous(n) = dV
+                n = n + 1
+            End If
+        End If
+    Next
+
+    If n = nNb0 Then Exit Sub   ' rien a inserer
+
+    ' Tri par insertion des abscisses fusionnees
+    For i = 1 To n - 1
+        Dim dV2 As Double
+        dV2 = dTous(i)
+        j = i - 1
+        Do While j >= 0
+            If dTous(j) <= dV2 Then Exit Do
+            dTous(j + 1) = dTous(j)
+            j = j - 1
+        Loop
+        dTous(j + 1) = dV2
+    Next
+
+    ' Reconstruction de la polyligne sur les abscisses fusionnees
+    ReDim dX(0 To n - 1)
+    ReDim dY(0 To n - 1)
+    ReDim dS(0 To n - 1)
+    For i = 0 To n - 1
+        Dim dPX As Double, dPY As Double
+        PointSurPolyligne2D dX0, dY0, dS0, dTous(i), dPX, dPY
+        dX(i) = dPX: dY(i) = dPY
+        dS(i) = dTous(i)
+    Next
+End Sub
+
+'------------------------------------------------------------------------------
 ' Pente en % sur une longueur developpee. Longueur quasi nulle : 0.
 Function PentePctLongueur(ByVal dZ1 As Double, ByVal dZ2 As Double, _
                           ByVal dLongueur As Double) As Double
