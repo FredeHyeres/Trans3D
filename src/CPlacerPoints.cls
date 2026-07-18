@@ -72,14 +72,16 @@ Private Sub IPrimitiveCommandEvents_DataPoint(Point As Point3d, ByVal View As Vi
             g_oSettings.oTexte.SepDecimal = sSep
             g_oSettings.AjusterDecimales nDec
         End If
+        frmTrans3D.RafraichirTexte
 
         g_oMoteur.CreerPointCote m_dPosX, m_dPosY, oCote.Altitude, _
                                  g_oSettings, g_oCalc
 
-        ShowPrompt "Point cree Z=" & _
-                   g_oCalc.FormatAltitude(oCote.Altitude, _
-                       g_oSettings.oTexte.Decimales, _
-                       g_oSettings.oTexte.SepDecimal) & _
+        Dim sZ As String
+        sZ = g_oCalc.FormatAltitude(oCote.Altitude, _
+                 g_oSettings.oTexte.Decimales, g_oSettings.oTexte.SepDecimal)
+        frmTrans3D.AfficherInfo "Dernier point : Z=" & sZ
+        ShowPrompt "Point cree Z=" & sZ & _
                    "  |  Snappez la position suivante  (Reset=quitter)"
         RetourPosition
     End Select
@@ -103,7 +105,7 @@ End Sub
 Private Sub IPrimitiveCommandEvents_Reset()
     Select Case m_nEtape
     Case 1
-        ' TODO formulaire : frmTrans3D.Hide
+        frmTrans3D.Hide
         ShowPrompt "Trans3D - Points : termine."
         CommandState.StartDefaultCommand
 

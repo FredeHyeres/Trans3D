@@ -47,8 +47,8 @@ Public g_oSelectionCourante As CAltitudeSelection ' derniere cote trouvee (Reche
 Sub Convertir()
     If Not EnvironnementPret("Trans3D - Convertir") Then Exit Sub
     InitialiserContexte
+    AfficherFormulaire frmTrans3D
 
-    ' TODO (etape suivante) : AfficherFormulaire frmTrans3D
     CommandState.StartPrimitive New CPlacerConvertir
 End Sub
 
@@ -57,8 +57,8 @@ End Sub
 Sub Semer()
     If Not EnvironnementPret("Trans3D - Semer") Then Exit Sub
     InitialiserContexte
+    AfficherFormulaire frmTrans3D
 
-    ' TODO (etape suivante) : AfficherFormulaire frmTrans3D
     CommandState.StartPrimitive New CPlacerSemis
 End Sub
 
@@ -67,8 +67,8 @@ End Sub
 Sub Points()
     If Not EnvironnementPret("Trans3D - Points") Then Exit Sub
     InitialiserContexte
+    AfficherFormulaire frmTrans3D
 
-    ' TODO (etape suivante) : AfficherFormulaire frmTrans3D
     CommandState.StartPrimitive New CPlacerPoints
 End Sub
 

@@ -77,8 +77,11 @@ Private Sub IPrimitiveCommandEvents_DataPoint(Point As Point3d, ByVal View As Vi
         AjouterRef m_dLong, dAltFin
         Dim dPente As Double
         dPente = g_oCalc.PentePctLongueur(m_dZRef(0), dAltFin, m_dLong)
-        ShowPrompt "Fin Z=" & FormatZ(dAltFin) & "  Pente=" & _
-                   g_oCalc.FormatPente(dPente, g_oSettings.oTexte.SepDecimal) & _
+        Dim sPente As String
+        sPente = g_oCalc.FormatPente(dPente, g_oSettings.oTexte.SepDecimal)
+        frmTrans3D.AfficherInfo "L=" & Format$(m_dLong, "0.00") & _
+                                " m   Pente=" & sPente
+        ShowPrompt "Fin Z=" & FormatZ(dAltFin) & "  Pente=" & sPente & _
                    "  |  Data=cote intermediaire  Reset=CREER l'element 3D"
         m_nEtape = 4
 
@@ -122,7 +125,7 @@ Private Sub IPrimitiveCommandEvents_Reset()
     Select Case m_nEtape
     Case 1
         ' Quitter la commande
-        ' TODO formulaire : frmTrans3D.Hide
+        frmTrans3D.Hide
         ShowPrompt "Trans3D - Convertir : termine."
         CommandState.StartDefaultCommand
 
@@ -154,6 +157,7 @@ Private Sub RetourSelection()
     Set m_oElem = Nothing
     Set m_oAtt = Nothing
     m_nNbRef = 0
+    frmTrans3D.ReinitialiserEtat
     ShowPrompt "Cliquez pres de l'element 2D a convertir  (Reset=quitter)"
 End Sub
 
@@ -181,6 +185,8 @@ Private Sub SelectionnerElement(Point As Point3d)
     m_nNbRef = 0
     ReDim m_dSRef(0 To 15)
     ReDim m_dZRef(0 To 15)
+    frmTrans3D.AfficherInfo "Element selectionne  L=" & _
+                            Format$(m_dLong, "0.00") & " m"
 
     If m_bFerme Then
         ShowPrompt "Element ferme L=" & Format$(m_dLong, "0.00") & _
@@ -292,6 +298,7 @@ Private Function LireCote(Point As Point3d, ByVal bChargerModele As Boolean, _
             g_oSettings.oTexte.SepDecimal = sSep
             g_oSettings.AjusterDecimales nDec
         End If
+        frmTrans3D.RafraichirTexte
     Else
         g_oSettings.AjusterDecimales nDec
     End If

@@ -97,7 +97,7 @@ End Sub
 Private Sub IPrimitiveCommandEvents_Reset()
     Select Case m_nEtape
     Case 1
-        ' TODO formulaire : frmTrans3D.Hide
+        frmTrans3D.Hide
         ShowPrompt "Trans3D - Semer : termine."
         CommandState.StartDefaultCommand
 
@@ -118,6 +118,7 @@ Private Sub RetourSelection()
     m_nEtape = 1
     m_bGeomOk = False
     Set m_oElem = Nothing
+    frmTrans3D.ReinitialiserEtat
     ShowPrompt "Cliquez pres de l'element 3D a coter  (Reset=quitter)"
 End Sub
 
@@ -141,6 +142,8 @@ Private Sub SelectionnerElement(Point As Point3d)
     m_dLong = g_oCalc.AbscissesPolyligne3D(m_dX, m_dY, m_dZ, m_dS)
     m_bGeomOk = True
 
+    frmTrans3D.AfficherInfo "Element selectionne  L=" & _
+                            Format$(m_dLong, "0.00") & " m"
     ShowPrompt "Element L=" & Format$(m_dLong, "0.00") & _
                " m  |  Data=creer le semis  Reset=abandonner"
     m_nEtape = 2
