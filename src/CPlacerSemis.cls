@@ -97,6 +97,9 @@ Private Sub IPrimitiveCommandEvents_Dynamics(Point As Point3d, ByVal View As Vie
                                              ByVal DrawMode As MsdDrawingMode)
     If m_nEtape <> 2 Or Not m_bGeomOk Then Exit Sub
 
+    ' Surlignage de l'element 3D selectionne
+    g_oMoteur.DessinPolyligneDyn DrawMode, m_dX, m_dY, m_dZ
+
     Dim dSemis() As Double, nNb As Long
     nNb = CalculerSemis(dSemis)
     If nNb < 1 Then Exit Sub
