@@ -503,6 +503,7 @@ Sub CreerPointCote(ByVal dXpt As Double, ByVal dYpt As Double, _
     On Error GoTo 0
 End Sub
 
+
 '==============================================================================
 ' Apercus dynamiques (appeles dans IPrimitiveCommandEvents_Dynamics)
 '==============================================================================
@@ -709,7 +710,6 @@ Private Function ConstruireTexteAltitude(ptTexte As Point3d, _
             Dim oTSObj As Object
             Set oTSObj = oTS
             oTSObj.Background = True
-            oTSObj.BackgroundFillColor = 0
             Err.Clear
         End If
         oTxt.TextStyle = oTS
@@ -718,8 +718,19 @@ Private Function ConstruireTexteAltitude(ptTexte As Point3d, _
         Err.Clear
         On Error GoTo 0
     Else
-        ' Mode duplication : assurer le niveau dans le fichier 3D
+        ' Mode duplication : lier au style nomme du fichier actif (resout le
+        ' probleme de fond noir car le style local a le bon BackgroundColor)
         On Error Resume Next
+        Dim sStyleNom As String
+        sStyleNom = oSettings.oTextModele.TextStyle.Name
+        If Err.Number = 0 And Len(sStyleNom) > 0 Then
+            Dim oStyleLocal As TextStyle
+            Set oStyleLocal = ActiveDesignFile.TextStyles(sStyleNom)
+            If Not oStyleLocal Is Nothing Then
+                oTxt.TextStyle = oStyleLocal
+            End If
+        End If
+        Err.Clear
         Set oTxt.Level = ResolverNiveau(oSettings.oTexte.NomNiveau)
         Err.Clear
         On Error GoTo 0

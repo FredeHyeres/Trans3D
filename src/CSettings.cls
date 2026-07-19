@@ -99,7 +99,8 @@ End Sub
 
 '------------------------------------------------------------------------------
 ' Cree le style de texte du modele dans le fichier actif s'il n'existe pas.
-' Copie Height, Width, Font, Color, Background, BackgroundFillColor.
+' Le background est active en deux temps pour que MicroStation initialise
+' correctement la couleur de fond (comme un toggle manuel dans la UI).
 Private Sub SyncStyleTexteModele(oText As TextElement)
     On Error Resume Next
     Dim oSrcTS As TextStyle
@@ -124,11 +125,26 @@ Private Sub SyncStyleTexteModele(oText As TextElement)
     oNew.Width = oSrcTS.Width
     Set oNew.Font = oSrcTS.Font
     oNew.Color = oSrcTS.Color
+
     Dim oNewObj As Object, oSrcObj As Object
     Set oNewObj = oNew
     Set oSrcObj = oSrcTS
-    oNewObj.Background = oSrcObj.Background
-    oNewObj.BackgroundFillColor = oSrcObj.BackgroundFillColor
+
+    ' Tester si la source a un background actif
+    Dim bSrcBg As Boolean
+    bSrcBg = False
+    bSrcBg = CBool(oSrcObj.Background)
+    Err.Clear
+
+    If bSrcBg Then
+        ' Etape 1 : creer sans background (etat initial propre)
+        oNewObj.Background = False
+        Err.Clear
+        ' Etape 2 : activer le background (MicroStation initialise le fill)
+        oNewObj.Background = True
+        Err.Clear
+    End If
+
     Err.Clear
     On Error GoTo 0
 End Sub
