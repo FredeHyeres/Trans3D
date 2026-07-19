@@ -14,6 +14,7 @@ Attribute VB_Exposed = False
 '   Data  = memoriser le XY snappe (sommet, intersection...)
 '   Reset = quitter la commande
 ' Etape 2 (ALTITUDE) : clic pres de la cote d'altitude (texte/cellule/tag)
+'   OU saisie manuelle du Z dans le formulaire (Enter = valider)
 '   Data  = lire la cote, creer le point cote (cercle au Z reel + texte a
 '           Z=0.00), retour etape 1
 '   Reset = abandonner cette position, retour etape 1
@@ -44,43 +45,55 @@ Private Sub IPrimitiveCommandEvents_DataPoint(Point As Point3d, ByVal View As Vi
         frmPoints.AfficherElement "Position fixee (" & _
             Format$(m_dPosX, "0.00") & " ; " & Format$(m_dPosY, "0.00") & ")"
         ShowPrompt "Position fixee  |  Cliquez la cote d'altitude" & _
-                   "  (Reset=autre position)"
+                   " ou saisissez Z au formulaire  (Reset=autre position)"
+        frmPoints.ActiverSaisieZ
         m_nEtape = 2
 
     Case 2
-        ' --- Lire la cote et creer le point ---
-        Dim oText As TextElement
-        If Not TrouverAltitudeProche(Point, g_oSettings.dTolTexte, oText) Then
-            ShowPrompt "Aucune cote a moins de " & g_oSettings.dTolTexte & _
-                       " u.m. - recliquez"
-            Exit Sub
-        End If
+        Dim dZ As Double
 
-        Dim oCote As New CPointRef
-        Dim sSep As String, nDec As Integer
-        If Not g_oCalc.LireAltitudeTexte(oCote, sSep, nDec) Then
-            ShowPrompt "Texte '" & g_oSelectionCourante.ValeurTexte & _
-                       "' non numerique - recliquez"
-            Exit Sub
-        End If
-
-        ' La cote lue sert de modele de style pour le texte cree
-        If Not oText Is Nothing Then
-            g_oSettings.ChargerModeleTexte oText, sSep, nDec
-        ElseIf Not g_oSelectionCourante.oTag Is Nothing Then
-            g_oSettings.ChargerModeleDepuisTag g_oSelectionCourante.oTag, _
-                                               sSep, nDec
+        ' --- Priorite : altitude saisie au formulaire ---
+        Dim sSaisie As String
+        sSaisie = frmPoints.AltitudeManuelle
+        If Len(sSaisie) > 0 Then
+            dZ = Val(Replace(sSaisie, ",", "."))
+            frmPoints.EffacerSaisieZ
         Else
-            g_oSettings.oTexte.SepDecimal = sSep
-            g_oSettings.AjusterDecimales nDec
-        End If
-        frmPoints.RafraichirTexte
+            ' --- Recherche de la cote sur le plan ---
+            Dim oText As TextElement
+            If Not TrouverAltitudeProche(Point, g_oSettings.dTolTexte, oText) Then
+                ShowPrompt "Aucune cote a moins de " & g_oSettings.dTolTexte & _
+                           " u.m. - recliquez"
+                Exit Sub
+            End If
 
-        ' Les erreurs des evenements de commande sont avalees par V8i sans
-        ' dialogue : on les capture pour les afficher au lieu d'echouer muet.
+            Dim oCote As New CPointRef
+            Dim sSep As String, nDec As Integer
+            If Not g_oCalc.LireAltitudeTexte(oCote, sSep, nDec) Then
+                ShowPrompt "Texte '" & g_oSelectionCourante.ValeurTexte & _
+                           "' non numerique - recliquez"
+                Exit Sub
+            End If
+
+            dZ = oCote.Altitude
+
+            ' La cote lue sert de modele de style pour le texte cree
+            If Not oText Is Nothing Then
+                g_oSettings.ChargerModeleTexte oText, sSep, nDec
+            ElseIf Not g_oSelectionCourante.oTag Is Nothing Then
+                g_oSettings.ChargerModeleDepuisTag g_oSelectionCourante.oTag, _
+                                                   sSep, nDec
+            Else
+                g_oSettings.oTexte.SepDecimal = sSep
+                g_oSettings.AjusterDecimales nDec
+            End If
+            frmPoints.RafraichirTexte
+        End If
+
+        ' --- Creer le point ---
         Dim sErreur As String
         On Error Resume Next
-        g_oMoteur.CreerPointCote m_dPosX, m_dPosY, oCote.Altitude, _
+        g_oMoteur.CreerPointCote m_dPosX, m_dPosY, dZ, _
                                  g_oSettings, g_oCalc
         If Err.Number <> 0 Then _
             sErreur = "(" & Err.Number & ") " & Err.Description
@@ -93,7 +106,7 @@ Private Sub IPrimitiveCommandEvents_DataPoint(Point As Point3d, ByVal View As Vi
         End If
 
         Dim sZ As String
-        sZ = g_oCalc.FormatAltitude(oCote.Altitude, _
+        sZ = g_oCalc.FormatAltitude(dZ, _
                  g_oSettings.oTexte.Decimales, g_oSettings.oTexte.SepDecimal)
         frmPoints.AfficherZ "Dernier point : Z = " & sZ
         ShowPrompt "Point cree Z=" & sZ & _
@@ -135,5 +148,6 @@ End Sub
 '------------------------------------------------------------------------------
 Private Sub RetourPosition()
     m_nEtape = 1
+    frmPoints.DesactiverSaisieZ
     ShowPrompt "Snappez la position du point 3D  (Reset=quitter)"
 End Sub

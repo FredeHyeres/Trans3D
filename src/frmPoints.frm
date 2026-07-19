@@ -33,6 +33,7 @@ Option Explicit
 Private m_oSettings  As CSettings
 Private m_bInit      As Boolean
 Private m_bConstruit As Boolean
+Private m_bAttenteZ  As Boolean
 
 ' --- Cercle repere ---
 Private WithEvents chkCreerCercle As MSForms.CheckBox
@@ -65,6 +66,10 @@ Attribute chkVirgule.VB_VarHelpID = -1
 ' --- Recherche ---
 Private WithEvents txtTolerance As MSForms.TextBox
 Attribute txtTolerance.VB_VarHelpID = -1
+' --- Saisie altitude ---
+Private WithEvents txtSaisieZ As MSForms.TextBox
+Attribute txtSaisieZ.VB_VarHelpID = -1
+Private lblSaisieInfo As MSForms.Label
 ' --- Etat ---
 Private lblEtat1     As MSForms.Label
 Private lblEtat2     As MSForms.Label
@@ -83,7 +88,7 @@ Private Sub ConstruireControles()
 
     Me.Caption = "Trans3D - Points"
     Me.Width = 212
-    Me.Height = 390
+    Me.Height = 434
 
     Dim dY As Double
     dY = 6
@@ -185,6 +190,24 @@ Private Sub ConstruireControles()
 
     dY = dY + 44
 
+    ' --- Cadre Saisie altitude ------------------------------------------------
+    Dim fraSaisie As MSForms.Frame
+    Set fraSaisie = Me.Controls.Add("Forms.Frame.1", "fraSaisie")
+    fraSaisie.Caption = "Saisie altitude manuelle"
+    fraSaisie.Left = 6: fraSaisie.Top = dY
+    fraSaisie.Width = 192: fraSaisie.Height = 38
+
+    CreerLabel fraSaisie, "lblZ", "Z :", 6, 14, 16
+    Set txtSaisieZ = fraSaisie.Controls.Add("Forms.TextBox.1", "txtSaisieZ")
+    txtSaisieZ.Left = 24: txtSaisieZ.Top = 12
+    txtSaisieZ.Width = 56: txtSaisieZ.Height = 16
+    txtSaisieZ.Enabled = False
+
+    Set lblSaisieInfo = CreerLabel(fraSaisie, "lblSaisieInfo", _
+        "(Enter = valider)", 86, 14, 100)
+
+    dY = dY + 44
+
     ' --- Cadre Etat -----------------------------------------------------------
     Dim fraEtat As MSForms.Frame
     Set fraEtat = Me.Controls.Add("Forms.Frame.1", "fraEtat")
@@ -282,6 +305,37 @@ Sub ReinitialiserEtat()
     If Not m_bConstruit Then Exit Sub
     lblEtat1.Caption = "-"
     lblEtat2.Caption = "-"
+End Sub
+
+'------------------------------------------------------------------------------
+' Active la saisie manuelle (appele par CPlacerPoints a l'etape 2).
+Sub ActiverSaisieZ()
+    If Not m_bConstruit Then Exit Sub
+    m_bAttenteZ = True
+    txtSaisieZ.Enabled = True
+End Sub
+
+'------------------------------------------------------------------------------
+' Desactive la saisie manuelle (appele au retour etape 1).
+Sub DesactiverSaisieZ()
+    If Not m_bConstruit Then Exit Sub
+    m_bAttenteZ = False
+    txtSaisieZ.Enabled = False
+    txtSaisieZ.Text = ""
+End Sub
+
+'------------------------------------------------------------------------------
+' Retourne l'altitude saisie manuellement (vide = pas de saisie).
+Property Get AltitudeManuelle() As String
+    If Not m_bConstruit Then AltitudeManuelle = "": Exit Property
+    AltitudeManuelle = Trim$(txtSaisieZ.Text)
+End Property
+
+'------------------------------------------------------------------------------
+' Efface le champ apres utilisation.
+Sub EffacerSaisieZ()
+    If Not m_bConstruit Then Exit Sub
+    txtSaisieZ.Text = ""
 End Sub
 
 Sub RafraichirTexte()
@@ -435,6 +489,20 @@ Private Sub txtTolerance_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, _
                                  ByVal Shift As Integer)
     If KeyCode = vbKeyReturn And Not m_oSettings Is Nothing Then _
         txtTolerance.Text = Format$(m_oSettings.dTolTexte, "0.00")
+End Sub
+
+'==============================================================================
+' Evenements Saisie altitude
+'==============================================================================
+
+Private Sub txtSaisieZ_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, _
+                               ByVal Shift As Integer)
+    If KeyCode = vbKeyReturn And m_bAttenteZ Then
+        If Len(Trim$(txtSaisieZ.Text)) > 0 Then
+            Dim pt As Point3d
+            CadInputQueue.SendDataPoint pt, 1
+        End If
+    End If
 End Sub
 
 '------------------------------------------------------------------------------
