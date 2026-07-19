@@ -191,10 +191,15 @@ End Sub
 Private Function AttachmentAffiche(oAttachment As Object) As Boolean
     AttachmentAffiche = False
     On Error Resume Next
-    AttachmentAffiche = CBool(oAttachment.Display)
+    AttachmentAffiche = CBool(oAttachment.IsEffectivelyDisplayedInView( _
+                              ActiveDesignFile.Views(1)))
     If Err.Number <> 0 Then
         Err.Clear
-        AttachmentAffiche = False
+        AttachmentAffiche = CBool(oAttachment.IsDisplayed)
+        If Err.Number <> 0 Then
+            Err.Clear
+            AttachmentAffiche = False
+        End If
     End If
     On Error GoTo 0
 End Function
