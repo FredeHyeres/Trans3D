@@ -189,12 +189,12 @@ End Sub
 
 '------------------------------------------------------------------------------
 Private Function AttachmentAffiche(oAttachment As Object) As Boolean
-    AttachmentAffiche = False
+    AttachmentAffiche = True
     On Error Resume Next
-    AttachmentAffiche = CBool(oAttachment.Display)
+    AttachmentAffiche = CBool(oAttachment.IsDisplayed)
     If Err.Number <> 0 Then
         Err.Clear
-        AttachmentAffiche = False
+        AttachmentAffiche = True
     End If
     On Error GoTo 0
 End Function
