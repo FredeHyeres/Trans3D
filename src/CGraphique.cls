@@ -34,6 +34,68 @@ Private Const NB_SEG_MIN As Long = 8      ' segments mini pour un arc
 Private Const NB_SEG_MAX As Long = 2000   ' garde-fou discretisation
 
 '==============================================================================
+' Synchronisation des ressources depuis les references 2D
+'==============================================================================
+
+'------------------------------------------------------------------------------
+' Copie les niveaux et styles de texte des references 2D vers le fichier 3D
+' actif. A appeler une fois au lancement de la commande pour que les elements
+' crees (textes, cercles, polylignes) puissent utiliser les memes niveaux et
+' styles que le fichier source.
+Sub SynchroniserRessourcesReferences()
+    On Error Resume Next
+    Dim oAttachments As Object
+    Set oAttachments = ActiveModelReference.Attachments
+    If oAttachments Is Nothing Then Exit Sub
+    If Err.Number <> 0 Then Err.Clear: Exit Sub
+
+    Dim nCount As Long
+    nCount = oAttachments.Count
+    If Err.Number <> 0 Then Err.Clear: Exit Sub
+
+    Dim i As Long
+    For i = 1 To nCount
+        Dim oAtt As Object
+        Set oAtt = Nothing
+        Set oAtt = oAttachments(i)
+        If Not oAtt Is Nothing Then
+            SyncNiveauxDepuisRef oAtt
+        End If
+        Err.Clear
+    Next
+    On Error GoTo 0
+End Sub
+
+'------------------------------------------------------------------------------
+Private Sub SyncNiveauxDepuisRef(oAtt As Object)
+    On Error Resume Next
+    Dim oLevels As Object
+    Set oLevels = oAtt.Levels
+    If oLevels Is Nothing Then Exit Sub
+    If Err.Number <> 0 Then Err.Clear: Exit Sub
+
+    Dim oRefLvl As Level
+    For Each oRefLvl In oLevels
+        Dim sNom As String
+        sNom = oRefLvl.Name
+        If Err.Number <> 0 Then Err.Clear: GoTo SuivantNiveau
+        If Len(sNom) = 0 Then GoTo SuivantNiveau
+
+        Dim oExist As Level
+        Set oExist = Nothing
+        Set oExist = ActiveDesignFile.Levels(sNom)
+        If oExist Is Nothing Then
+            Err.Clear
+            ActiveDesignFile.AddNewLevel sNom
+            Err.Clear
+        End If
+SuivantNiveau:
+        Err.Clear
+    Next
+    On Error GoTo 0
+End Sub
+
+'==============================================================================
 ' Extraction de geometrie
 '==============================================================================
 
@@ -407,6 +469,7 @@ End Function
 Sub CreerPointCote(ByVal dXpt As Double, ByVal dYpt As Double, _
                    ByVal dZpt As Double, _
                    oSettings As CSettings, oCalc As CCalcul)
+    On Error Resume Next
 
     If oSettings.bCreerCercle Then
         Dim ptCercle As Point3d
@@ -415,31 +478,29 @@ Sub CreerPointCote(ByVal dXpt As Double, ByVal dYpt As Double, _
         Set oCercle = CreateEllipseElement2(Nothing, ptCercle, _
                           oSettings.oCercle.Rayon, oSettings.oCercle.Rayon, _
                           Matrix3dIdentity())
-        If oCercle Is Nothing Then
-            Err.Raise vbObjectError + 513, "CGraphique", _
-                      "Creation du cercle impossible (CreateEllipseElement2)"
+        If Not oCercle Is Nothing Then
+            oCercle.Color = oSettings.oCercle.Couleur
+            Set oCercle.Level = ResolverNiveau(oSettings.oCercle.NomNiveau)
+            Err.Clear
+            ActiveModelReference.AddElement oCercle
         End If
-        On Error Resume Next
-        oCercle.Color = oSettings.oCercle.Couleur
-        Set oCercle.Level = ResolverNiveau(oSettings.oCercle.NomNiveau)
         Err.Clear
-        On Error GoTo 0
-        ActiveModelReference.AddElement oCercle
     End If
 
     If oSettings.bCreerTexte Then
         Dim ptTexte As Point3d
         ptTexte.X = dXpt + oSettings.oCercle.Rayon * 1.5
         ptTexte.Y = dYpt
-        ptTexte.Z = 0#          ' regle fixe : texte a l'altitude 0.00
+        ptTexte.Z = 0#
         Dim oTxt As TextElement
         Set oTxt = ConstruireTexteAltitude(ptTexte, dZpt, oSettings, oCalc)
-        If oTxt Is Nothing Then
-            Err.Raise vbObjectError + 514, "CGraphique", _
-                      "Creation du texte impossible (CreateTextElement1)"
+        If Not oTxt Is Nothing Then
+            ActiveModelReference.AddElement oTxt
         End If
-        ActiveModelReference.AddElement oTxt
+        Err.Clear
     End If
+
+    On Error GoTo 0
 End Sub
 
 '==============================================================================
@@ -461,9 +522,10 @@ Sub DessinPolyligneDyn(ByVal DrawMode As MsdDrawingMode, _
 End Sub
 
 '------------------------------------------------------------------------------
-' Surlignage a plat (Z=0) de l'element 2D selectionne.
+' Surlignage de l'element 2D selectionne a la profondeur du curseur.
 Sub DessinSurlignage2D(ByVal DrawMode As MsdDrawingMode, _
-                       dX() As Double, dY() As Double)
+                       dX() As Double, dY() As Double, _
+                       Optional ByVal dZVue As Double = 0#)
     Dim nLo As Long, nHi As Long, i As Long
     nLo = LBound(dX): nHi = UBound(dX)
     Dim aPts() As Point3d
@@ -471,12 +533,13 @@ Sub DessinSurlignage2D(ByVal DrawMode As MsdDrawingMode, _
     For i = nLo To nHi
         aPts(i).X = dX(i)
         aPts(i).Y = dY(i)
-        aPts(i).Z = 0#
+        aPts(i).Z = dZVue
     Next
     On Error Resume Next
     Dim oLigne As LineElement
     Set oLigne = CreateLineElement1(Nothing, aPts)
     oLigne.Color = 3
+    oLigne.LineWeight = 5
     oLigne.Redraw DrawMode
     On Error GoTo 0
 End Sub
@@ -509,6 +572,58 @@ Sub DessinPointCoteDyn(ByVal DrawMode As MsdDrawingMode, _
         Set oTxt = ConstruireTexteAltitude(ptTexte, dZpt, oSettings, oCalc)
         If Not oTxt Is Nothing Then oTxt.Redraw DrawMode
     End If
+
+    On Error GoTo 0
+End Sub
+
+'------------------------------------------------------------------------------
+' Fleche de direction provisoire : indique le sens de parcours de l'element
+' depuis son origine. Dessine un segment court + pointe triangulaire.
+Sub DessinFlecheDirection(ByVal DrawMode As MsdDrawingMode, _
+                          dX() As Double, dY() As Double, _
+                          ByVal dTaille As Double)
+    On Error Resume Next
+    Dim nLo As Long, nHi As Long
+    nLo = LBound(dX): nHi = UBound(dX)
+    If nHi <= nLo Then Exit Sub
+
+    ' Direction au depart (vers le 2e sommet)
+    Dim dDx As Double, dDy As Double, dNorm As Double
+    dDx = dX(nLo + 1) - dX(nLo)
+    dDy = dY(nLo + 1) - dY(nLo)
+    dNorm = Sqr(dDx * dDx + dDy * dDy)
+    If dNorm < 0.0001 Then Exit Sub
+    dDx = dDx / dNorm: dDy = dDy / dNorm
+
+    ' Hampe : segment de longueur dTaille partant de l'origine
+    Dim ptA As Point3d, ptB As Point3d
+    ptA.X = dX(nLo): ptA.Y = dY(nLo): ptA.Z = 0#
+    ptB.X = ptA.X + dDx * dTaille
+    ptB.Y = ptA.Y + dDy * dTaille: ptB.Z = 0#
+    Dim oHampe As LineElement
+    Set oHampe = CreateLineElement2(Nothing, ptA, ptB)
+    oHampe.Color = 1: oHampe.LineWeight = 3
+    oHampe.Redraw DrawMode
+
+    ' Pointe : triangle au bout de la hampe
+    Dim dFleche As Double
+    dFleche = dTaille * 0.4
+    Dim aPts(0 To 2) As Point3d
+    aPts(0) = ptB
+    aPts(1).X = ptB.X - dDx * dFleche + dDy * dFleche * 0.5
+    aPts(1).Y = ptB.Y - dDy * dFleche - dDx * dFleche * 0.5
+    aPts(1).Z = 0#
+    aPts(2).X = ptB.X - dDx * dFleche - dDy * dFleche * 0.5
+    aPts(2).Y = ptB.Y - dDy * dFleche + dDx * dFleche * 0.5
+    aPts(2).Z = 0#
+
+    Dim oP1 As LineElement, oP2 As LineElement, oP3 As LineElement
+    Set oP1 = CreateLineElement2(Nothing, aPts(0), aPts(1))
+    Set oP2 = CreateLineElement2(Nothing, aPts(1), aPts(2))
+    Set oP3 = CreateLineElement2(Nothing, aPts(2), aPts(0))
+    oP1.Color = 1: oP1.LineWeight = 3: oP1.Redraw DrawMode
+    oP2.Color = 1: oP2.LineWeight = 3: oP2.Redraw DrawMode
+    oP3.Color = 1: oP3.LineWeight = 3: oP3.Redraw DrawMode
 
     On Error GoTo 0
 End Sub
@@ -591,15 +706,20 @@ Private Function ConstruireTexteAltitude(ptTexte As Point3d, _
             Err.Clear
         End If
         If oSettings.oTexte.FondActif Then
-            ' Fond/masque : nom exact de la propriete a valider sur poste,
-            ' liaison tardive pour ne pas bloquer la compilation
             Dim oTSObj As Object
             Set oTSObj = oTS
             oTSObj.Background = True
+            oTSObj.BackgroundFillColor = 0
             Err.Clear
         End If
         oTxt.TextStyle = oTS
         oTxt.Color = oSettings.oTexte.Couleur
+        Set oTxt.Level = ResolverNiveau(oSettings.oTexte.NomNiveau)
+        Err.Clear
+        On Error GoTo 0
+    Else
+        ' Mode duplication : assurer le niveau dans le fichier 3D
+        On Error Resume Next
         Set oTxt.Level = ResolverNiveau(oSettings.oTexte.NomNiveau)
         Err.Clear
         On Error GoTo 0
@@ -673,7 +793,8 @@ Private Function NiveauOuCreation(sNiveau As String) As Level
 End Function
 
 '------------------------------------------------------------------------------
-' Niveau par nom ou numero ; chaine vide ou introuvable = niveau actif.
+' Niveau par nom ou numero ; chaine vide = niveau actif.
+' Cree le niveau s'il n'existe pas (meme logique que NiveauOuCreation).
 Private Function ResolverNiveau(sNiveau As String) As Level
     Set ResolverNiveau = ActiveSettings.Level
     If sNiveau = "" Then Exit Function
@@ -681,7 +802,6 @@ Private Function ResolverNiveau(sNiveau As String) As Level
     Dim oLvl As Level
     On Error Resume Next
     Set oLvl = ActiveDesignFile.Levels(sNiveau)
-    On Error GoTo 0
     If oLvl Is Nothing And IsNumeric(sNiveau) Then
         Dim oL As Level
         For Each oL In ActiveDesignFile.Levels
@@ -690,6 +810,12 @@ Private Function ResolverNiveau(sNiveau As String) As Level
             End If
         Next
     End If
+    If oLvl Is Nothing Then
+        Err.Clear
+        Set oLvl = ActiveDesignFile.AddNewLevel(sNiveau)
+    End If
+    Err.Clear
+    On Error GoTo 0
     If Not oLvl Is Nothing Then Set ResolverNiveau = oLvl
 End Function
 

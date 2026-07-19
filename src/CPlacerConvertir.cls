@@ -110,8 +110,14 @@ Private Sub IPrimitiveCommandEvents_Dynamics(Point As Point3d, ByVal View As Vie
                                              ByVal DrawMode As MsdDrawingMode)
     If Not m_bGeomOk Then Exit Sub
 
-    ' Surlignage a plat de l'element selectionne (etapes 2 a 4)
-    g_oMoteur.DessinSurlignage2D DrawMode, m_dX, m_dY
+    ' Surlignage de l'element selectionne a la profondeur du curseur
+    g_oMoteur.DessinSurlignage2D DrawMode, m_dX, m_dY, Point.Z
+
+    ' Fleche de direction : indique le sens de parcours (depart -> fin)
+    If m_nEtape >= 2 Then
+        g_oMoteur.DessinFlecheDirection DrawMode, m_dX, m_dY, _
+                                        g_oSettings.dTolTexte * 2
+    End If
 
     ' Apercu de l'element 3D des que depart + fin sont connus
     If m_nEtape = 4 And m_nNbRef >= 2 Then
@@ -253,6 +259,20 @@ Private Sub CreerElement3DFinal()
         Set oNouv = g_oMoteur.CreerPolyligne3D(m_dX, m_dY, dZ, m_oElem, _
                                                g_oSettings)
     End If
+
+    ' Points cotes aux extremites (cercle au Z reel + texte a Z=0)
+    Dim nDep As Long, nFin As Long
+    nDep = LBound(m_dX): nFin = UBound(m_dX)
+    On Error Resume Next
+    g_oMoteur.CreerPointCote m_dX(nDep), m_dY(nDep), _
+                             m_dZRef(0), g_oSettings, g_oCalc
+    Err.Clear
+    If Not m_bFerme And m_nNbRef >= 2 Then
+        g_oMoteur.CreerPointCote m_dX(nFin), m_dY(nFin), _
+                                 m_dZRef(m_nNbRef - 1), g_oSettings, g_oCalc
+        Err.Clear
+    End If
+    On Error GoTo 0
 
     Dim sBilan As String
     If bZConst Then

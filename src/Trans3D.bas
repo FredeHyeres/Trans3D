@@ -115,6 +115,8 @@ Public Sub InitialiserContexte()
     Set g_oCalc = New CCalcul
     Set g_oMoteur = New CGraphique
     Set g_oSelectionCourante = New CAltitudeSelection
+
+    g_oMoteur.SynchroniserRessourcesReferences
 End Sub
 
 '------------------------------------------------------------------------------
