@@ -112,7 +112,7 @@ Private Sub ConstruireControles()
     fraTexte.Width = 192: fraTexte.Height = 122
 
     Set chkCreerTexte = fraTexte.Controls.Add("Forms.CheckBox.1", "chkCreerTexte")
-    chkCreerTexte.Caption = "Creer le texte (a Z=0.00)"
+    chkCreerTexte.Caption = "Texte a Z=0.00 (sinon Z reel)"
     chkCreerTexte.Left = 6: chkCreerTexte.Top = 10
     chkCreerTexte.Width = 180: chkCreerTexte.Height = 14
 

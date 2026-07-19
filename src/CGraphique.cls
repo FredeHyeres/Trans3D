@@ -487,18 +487,20 @@ Sub CreerPointCote(ByVal dXpt As Double, ByVal dYpt As Double, _
         Err.Clear
     End If
 
+    Dim ptTexte As Point3d
+    ptTexte.X = dXpt + oSettings.oCercle.Rayon * 1.5
+    ptTexte.Y = dYpt
     If oSettings.bCreerTexte Then
-        Dim ptTexte As Point3d
-        ptTexte.X = dXpt + oSettings.oCercle.Rayon * 1.5
-        ptTexte.Y = dYpt
         ptTexte.Z = 0#
-        Dim oTxt As TextElement
-        Set oTxt = ConstruireTexteAltitude(ptTexte, dZpt, oSettings, oCalc)
-        If Not oTxt Is Nothing Then
-            ActiveModelReference.AddElement oTxt
-        End If
-        Err.Clear
+    Else
+        ptTexte.Z = dZpt
     End If
+    Dim oTxt As TextElement
+    Set oTxt = ConstruireTexteAltitude(ptTexte, dZpt, oSettings, oCalc)
+    If Not oTxt Is Nothing Then
+        ActiveModelReference.AddElement oTxt
+    End If
+    Err.Clear
 
     On Error GoTo 0
 End Sub
@@ -564,15 +566,17 @@ Sub DessinPointCoteDyn(ByVal DrawMode As MsdDrawingMode, _
         oCercle.Redraw DrawMode
     End If
 
+    Dim ptTexte As Point3d
+    ptTexte.X = dXpt + oSettings.oCercle.Rayon * 1.5
+    ptTexte.Y = dYpt
     If oSettings.bCreerTexte Then
-        Dim ptTexte As Point3d
-        ptTexte.X = dXpt + oSettings.oCercle.Rayon * 1.5
-        ptTexte.Y = dYpt
         ptTexte.Z = 0#
-        Dim oTxt As TextElement
-        Set oTxt = ConstruireTexteAltitude(ptTexte, dZpt, oSettings, oCalc)
-        If Not oTxt Is Nothing Then oTxt.Redraw DrawMode
+    Else
+        ptTexte.Z = dZpt
     End If
+    Dim oTxt As TextElement
+    Set oTxt = ConstruireTexteAltitude(ptTexte, dZpt, oSettings, oCalc)
+    If Not oTxt Is Nothing Then oTxt.Redraw DrawMode
 
     On Error GoTo 0
 End Sub
