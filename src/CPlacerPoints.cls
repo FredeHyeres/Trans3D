@@ -41,7 +41,7 @@ Private Sub IPrimitiveCommandEvents_DataPoint(Point As Point3d, ByVal View As Vi
         ' --- Memoriser la position (le Z snappe est ignore) ---
         m_dPosX = Point.X
         m_dPosY = Point.Y
-        frmTrans3D.AfficherElement "Position fixee (" & _
+        frmPoints.AfficherElement "Position fixee (" & _
             Format$(m_dPosX, "0.00") & " ; " & Format$(m_dPosY, "0.00") & ")"
         ShowPrompt "Position fixee  |  Cliquez la cote d'altitude" & _
                    "  (Reset=autre position)"
@@ -74,7 +74,7 @@ Private Sub IPrimitiveCommandEvents_DataPoint(Point As Point3d, ByVal View As Vi
             g_oSettings.oTexte.SepDecimal = sSep
             g_oSettings.AjusterDecimales nDec
         End If
-        frmTrans3D.RafraichirTexte
+        frmPoints.RafraichirTexte
 
         ' Les erreurs des evenements de commande sont avalees par V8i sans
         ' dialogue : on les capture pour les afficher au lieu d'echouer muet.
@@ -88,14 +88,14 @@ Private Sub IPrimitiveCommandEvents_DataPoint(Point As Point3d, ByVal View As Vi
 
         If Len(sErreur) > 0 Then
             ShowPrompt "ERREUR creation : " & sErreur
-            frmTrans3D.AfficherZ "ERREUR : " & sErreur
+            frmPoints.AfficherZ "ERREUR : " & sErreur
             Exit Sub
         End If
 
         Dim sZ As String
         sZ = g_oCalc.FormatAltitude(oCote.Altitude, _
                  g_oSettings.oTexte.Decimales, g_oSettings.oTexte.SepDecimal)
-        frmTrans3D.AfficherZ "Dernier point : Z = " & sZ
+        frmPoints.AfficherZ "Dernier point : Z = " & sZ
         ShowPrompt "Point cree Z=" & sZ & _
                    "  |  Snappez la position suivante  (Reset=quitter)"
         RetourPosition
@@ -120,7 +120,7 @@ End Sub
 Private Sub IPrimitiveCommandEvents_Reset()
     Select Case m_nEtape
     Case 1
-        frmTrans3D.Hide
+        frmPoints.Hide
         ShowPrompt "Trans3D - Points : termine."
         CommandState.StartDefaultCommand
 

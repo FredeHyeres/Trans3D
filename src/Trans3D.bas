@@ -67,7 +67,7 @@ End Sub
 Sub Points()
     If Not EnvironnementPret("Trans3D - Points") Then Exit Sub
     InitialiserContexte
-    AfficherFormulaire frmTrans3D
+    AfficherFormulaire frmPoints
 
     CommandState.StartPrimitive New CPlacerPoints
 End Sub
