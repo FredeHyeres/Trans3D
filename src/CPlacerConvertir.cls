@@ -260,7 +260,7 @@ Private Sub CreerElement3DFinal()
                                                g_oSettings)
     End If
 
-    ' Points cotes aux extremites (cercle au Z reel + texte a Z=0)
+    ' Points cotes aux extremites (cercle au Z reel + texte)
     Dim nDep As Long, nFin As Long
     nDep = LBound(m_dX): nFin = UBound(m_dX)
     On Error Resume Next
@@ -271,6 +271,39 @@ Private Sub CreerElement3DFinal()
         g_oMoteur.CreerPointCote m_dX(nFin), m_dY(nFin), _
                                  m_dZRef(m_nNbRef - 1), g_oSettings, g_oCalc
         Err.Clear
+    End If
+
+    ' Decoupage : points intermediaires le long de l'element
+    If g_oSettings.bDecoupage And Not m_bFerme Then
+        Dim dS3D() As Double, dZ3D() As Double
+        ReDim dZ3D(nDep To nFin)
+        If bZConst Then
+            Dim k As Long
+            For k = nDep To nFin: dZ3D(k) = m_dZRef(0): Next
+        Else
+            Dim j As Long
+            For j = nDep To nFin: dZ3D(j) = dZ(j): Next
+        End If
+        Dim dLong3D As Double
+        dLong3D = g_oCalc.AbscissesPolyligne3D(m_dX, m_dY, dZ3D, dS3D)
+
+        Dim dSemis() As Double, nNbSemis As Long
+        If g_oSettings.oSemis.Mode = semisPartsEgales Then
+            nNbSemis = g_oCalc.AbscissesSemisPartsEgales(dLong3D, _
+                           g_oSettings.oSemis.Nombre + 2, dSemis)
+        Else
+            nNbSemis = g_oCalc.AbscissesSemisPasFixe(dLong3D, _
+                           g_oSettings.oSemis.Pas, dSemis)
+        End If
+
+        Dim iSe As Long
+        Dim dPX As Double, dPY As Double, dPZ As Double
+        For iSe = 1 To nNbSemis - 2
+            g_oCalc.PointSurPolyligne3D m_dX, m_dY, dZ3D, dS3D, dSemis(iSe), dPX, dPY, dPZ
+            Err.Clear
+            g_oMoteur.CreerPointCote dPX, dPY, dPZ, g_oSettings, g_oCalc
+            Err.Clear
+        Next
     End If
     On Error GoTo 0
 

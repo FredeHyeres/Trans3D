@@ -64,7 +64,9 @@ Private WithEvents txtCouleurCercle As MSForms.TextBox
 Attribute txtCouleurCercle.VB_VarHelpID = -1
 Private WithEvents cmbNiveauCercle As MSForms.ComboBox
 Attribute cmbNiveauCercle.VB_VarHelpID = -1
-' --- Semis ---
+' --- Decoupage ---
+Private WithEvents chkDecoupage As MSForms.CheckBox
+Attribute chkDecoupage.VB_VarHelpID = -1
 Private WithEvents optPasFixe As MSForms.OptionButton
 Attribute optPasFixe.VB_VarHelpID = -1
 Private WithEvents optPartsEgales As MSForms.OptionButton
@@ -187,32 +189,37 @@ Private Sub ConstruireControles()
 
     dY = dY + 92
 
-    ' --- Cadre Semis ----------------------------------------------------------
-    Dim fraSemis As MSForms.Frame
-    Set fraSemis = Me.Controls.Add("Forms.Frame.1", "fraSemis")
-    fraSemis.Caption = "Semis"
-    fraSemis.Left = 6: fraSemis.Top = dY
-    fraSemis.Width = 192: fraSemis.Height = 56
+    ' --- Cadre Decoupage ------------------------------------------------------
+    Dim fraDecoupage As MSForms.Frame
+    Set fraDecoupage = Me.Controls.Add("Forms.Frame.1", "fraDecoupage")
+    fraDecoupage.Caption = "Decoupage"
+    fraDecoupage.Left = 6: fraDecoupage.Top = dY
+    fraDecoupage.Width = 192: fraDecoupage.Height = 74
 
-    Set optPasFixe = fraSemis.Controls.Add("Forms.OptionButton.1", "optPasFixe")
+    Set chkDecoupage = fraDecoupage.Controls.Add("Forms.CheckBox.1", "chkDecoupage")
+    chkDecoupage.Caption = "Creer des points intermediaires"
+    chkDecoupage.Left = 6: chkDecoupage.Top = 10
+    chkDecoupage.Width = 180: chkDecoupage.Height = 14
+
+    Set optPasFixe = fraDecoupage.Controls.Add("Forms.OptionButton.1", "optPasFixe")
     optPasFixe.Caption = "Distance fixe (m)"
-    optPasFixe.Left = 6: optPasFixe.Top = 10
+    optPasFixe.Left = 6: optPasFixe.Top = 28
     optPasFixe.Width = 110: optPasFixe.Height = 14
 
-    Set txtPas = fraSemis.Controls.Add("Forms.TextBox.1", "txtPas")
-    txtPas.Left = 130: txtPas.Top = 9
+    Set txtPas = fraDecoupage.Controls.Add("Forms.TextBox.1", "txtPas")
+    txtPas.Left = 130: txtPas.Top = 27
     txtPas.Width = 48: txtPas.Height = 16
 
-    Set optPartsEgales = fraSemis.Controls.Add("Forms.OptionButton.1", "optPartsEgales")
+    Set optPartsEgales = fraDecoupage.Controls.Add("Forms.OptionButton.1", "optPartsEgales")
     optPartsEgales.Caption = "Nombre de points"
-    optPartsEgales.Left = 6: optPartsEgales.Top = 30
+    optPartsEgales.Left = 6: optPartsEgales.Top = 48
     optPartsEgales.Width = 110: optPartsEgales.Height = 14
 
-    Set txtNombre = fraSemis.Controls.Add("Forms.TextBox.1", "txtNombre")
-    txtNombre.Left = 130: txtNombre.Top = 29
+    Set txtNombre = fraDecoupage.Controls.Add("Forms.TextBox.1", "txtNombre")
+    txtNombre.Left = 130: txtNombre.Top = 47
     txtNombre.Width = 48: txtNombre.Height = 16
 
-    dY = dY + 62
+    dY = dY + 80
 
     ' --- Cadre Convertir ------------------------------------------------------
     Dim fraConv As MSForms.Frame
@@ -295,12 +302,13 @@ Sub Initialiser(oSettings As CSettings)
     txtCouleurCercle.Text = CStr(m_oSettings.oCercle.Couleur)
     RemplirNiveaux cmbNiveauCercle
 
-    ' Semis
+    ' Decoupage
+    chkDecoupage.Value = m_oSettings.bDecoupage
     optPasFixe.Value = (m_oSettings.oSemis.Mode = semisDistanceFixe)
     optPartsEgales.Value = (m_oSettings.oSemis.Mode = semisPartsEgales)
     txtPas.Text = Format$(m_oSettings.oSemis.Pas, "0.00")
     txtNombre.Text = CStr(m_oSettings.oSemis.Nombre)
-    ActiverChampsSemis
+    ActiverChampsDecoupage
 
     ' Convertir
     txtDiscret.Text = Format$(m_oSettings.dPasDiscretisation, "0.00")
@@ -339,9 +347,13 @@ Private Sub ActiverChampsTexte()
 End Sub
 
 '------------------------------------------------------------------------------
-Private Sub ActiverChampsSemis()
-    txtPas.Enabled = (m_oSettings.oSemis.Mode = semisDistanceFixe)
-    txtNombre.Enabled = (m_oSettings.oSemis.Mode = semisPartsEgales)
+Private Sub ActiverChampsDecoupage()
+    Dim bActif As Boolean
+    bActif = m_oSettings.bDecoupage
+    optPasFixe.Enabled = bActif
+    optPartsEgales.Enabled = bActif
+    txtPas.Enabled = bActif And (m_oSettings.oSemis.Mode = semisDistanceFixe)
+    txtNombre.Enabled = bActif And (m_oSettings.oSemis.Mode = semisPartsEgales)
 End Sub
 
 '==============================================================================
@@ -508,21 +520,28 @@ Private Sub cmbNiveauCercle_Change()
 End Sub
 
 '==============================================================================
-' Evenements Semis
+' Evenements Decoupage
 '==============================================================================
+
+Private Sub chkDecoupage_Change()
+    If m_bInit Then Exit Sub
+    If m_oSettings Is Nothing Then Exit Sub
+    m_oSettings.bDecoupage = (chkDecoupage.Value = True)
+    ActiverChampsDecoupage
+End Sub
 
 Private Sub optPasFixe_Change()
     If m_bInit Then Exit Sub
     If m_oSettings Is Nothing Then Exit Sub
     If optPasFixe.Value = True Then m_oSettings.oSemis.Mode = semisDistanceFixe
-    ActiverChampsSemis
+    ActiverChampsDecoupage
 End Sub
 
 Private Sub optPartsEgales_Change()
     If m_bInit Then Exit Sub
     If m_oSettings Is Nothing Then Exit Sub
     If optPartsEgales.Value = True Then m_oSettings.oSemis.Mode = semisPartsEgales
-    ActiverChampsSemis
+    ActiverChampsDecoupage
 End Sub
 
 Private Sub txtPas_Change()
@@ -544,7 +563,7 @@ Private Sub txtNombre_Change()
     If m_oSettings Is Nothing Then Exit Sub
     Dim nNb As Long
     nNb = CLng(Val(Trim$(txtNombre.Text)))
-    If nNb >= 2 Then m_oSettings.oSemis.Nombre = nNb
+    If nNb >= 1 Then m_oSettings.oSemis.Nombre = nNb
 End Sub
 
 Private Sub txtNombre_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, _

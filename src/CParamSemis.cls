@@ -13,8 +13,8 @@ Attribute VB_Exposed = False
 ' Deux modes (enum eModeSemis dans Trans3D.bas) :
 '   semisDistanceFixe : un point au depart, puis tous les Pas, et un point a
 '                       la fin meme si le dernier intervalle est plus court
-'   semisPartsEgales  : Nombre points repartis uniformement, depart et fin
-'                       inclus (minimum 2)
+'   semisPartsEgales  : Nombre de points intermediaires a creer entre depart
+'                       et fin (minimum 1)
 '
 ' Simple sac de proprietes, sans dependance a l'API MicroStation.
 ' Le calcul des abscisses est dans CCalcul (AbscissesSemis*).
