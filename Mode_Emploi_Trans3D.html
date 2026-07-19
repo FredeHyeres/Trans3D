@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trans3D — Mode d'emploi</title>
+<style>
+  :root {
+    --bleu: #1a5276;
+    --bleu-clair: #2980b9;
+    --vert: #1e8449;
+    --orange: #ca6f1e;
+    --fond: #f4f6f7;
+    --carte: #ffffff;
+    --texte: #2c3e50;
+    --code-fond: #263238;
+    --code-texte: #aed581;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    background: var(--fond);
+    color: var(--texte);
+    margin: 0;
+    line-height: 1.6;
+  }
+  header {
+    background: linear-gradient(135deg, var(--bleu), var(--bleu-clair));
+    color: #fff;
+    padding: 40px 20px 30px;
+    text-align: center;
+  }
+  header h1 { margin: 0 0 8px; font-size: 2.2em; }
+  header p  { margin: 0; opacity: 0.9; font-size: 1.1em; }
+  nav {
+    background: #fff;
+    border-bottom: 2px solid #dde;
+    padding: 10px 20px;
+    text-align: center;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  nav a {
+    color: var(--bleu-clair);
+    text-decoration: none;
+    margin: 0 10px;
+    font-weight: 600;
+  }
+  nav a:hover { text-decoration: underline; }
+  main { max-width: 900px; margin: 0 auto; padding: 30px 20px 60px; }
+  section {
+    background: var(--carte);
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    padding: 25px 30px;
+    margin-bottom: 30px;
+  }
+  h2 {
+    color: var(--bleu);
+    border-bottom: 3px solid var(--bleu-clair);
+    padding-bottom: 8px;
+    margin-top: 0;
+  }
+  h3 { color: var(--bleu-clair); margin-bottom: 6px; }
+  code, .keyin {
+    background: var(--code-fond);
+    color: var(--code-texte);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 0.95em;
+  }
+  pre {
+    background: var(--code-fond);
+    color: var(--code-texte);
+    padding: 14px 18px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-family: Consolas, "Courier New", monospace;
+  }
+  ol li, ul li { margin-bottom: 8px; }
+  .astuce {
+    background: #eafaf1;
+    border-left: 5px solid var(--vert);
+    padding: 12px 18px;
+    border-radius: 0 8px 8px 0;
+    margin: 15px 0;
+  }
+  .attention {
+    background: #fef5e7;
+    border-left: 5px solid var(--orange);
+    padding: 12px 18px;
+    border-radius: 0 8px 8px 0;
+    margin: 15px 0;
+  }
+  .etapes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 20px 0;
+  }
+  .etape {
+    flex: 1 1 120px;
+    background: #eaf2f8;
+    border-radius: 8px;
+    padding: 14px;
+    text-align: center;
+  }
+  .etape .num {
+    display: inline-block;
+    background: var(--bleu-clair);
+    color: #fff;
+    width: 32px; height: 32px;
+    line-height: 32px;
+    border-radius: 50%;
+    font-weight: bold;
+    margin-bottom: 8px;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 15px 0;
+  }
+  th, td {
+    border: 1px solid #d5dbdb;
+    padding: 8px 12px;
+    text-align: left;
+  }
+  th { background: #eaf2f8; color: var(--bleu); }
+  footer {
+    text-align: center;
+    color: #7f8c8d;
+    font-size: 0.9em;
+    padding: 20px;
+  }
+  kbd {
+    background: #eee;
+    border: 1px solid #bbb;
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    padding: 1px 7px;
+    font-family: inherit;
+    font-size: 0.9em;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>&#128507; Trans3D</h1>
+  <p>Macro VBA pour MicroStation V8i &mdash; du plan 2D cot&eacute; &agrave; la mod&eacute;lisation 3D terrain</p>
+</header>
+
+<nav>
+  <a href="#presentation">Pr&eacute;sentation</a>
+  <a href="#installation">Installation</a>
+  <a href="#formulaire">Formulaire</a>
+  <a href="#convertir">Convertir</a>
+  <a href="#semer">Semer</a>
+  <a href="#points">Points</a>
+  <a href="#keyin">Key-in</a>
+  <a href="#fonction">Touche F</a>
+  <a href="#depannage">D&eacute;pannage</a>
+</nav>
+
+<main>
+
+<!-- ==================== PRESENTATION ==================== -->
+<section id="presentation">
+  <h2>1. Pr&eacute;sentation</h2>
+  <p>
+    <strong>Trans3D</strong> fournit trois commandes pour passer du plan 2D cot&eacute;
+    &agrave; la mod&eacute;lisation 3D dans MicroStation V8i. L'utilisateur travaille dans un
+    <strong>fichier 3D actif</strong> avec un ou plusieurs <strong>fichiers 2D en
+    r&eacute;f&eacute;rence</strong> (plans topo/VRD cot&eacute;s).
+  </p>
+
+  <table>
+    <tr><th>Commande</th><th>Key-in</th><th>Description</th></tr>
+    <tr>
+      <td><strong>Convertir</strong></td>
+      <td><code>vba run [Trans3D]Convertir</code></td>
+      <td>Cr&eacute;e l'&eacute;quivalent 3D d'un &eacute;l&eacute;ment 2D d'une r&eacute;f&eacute;rence, avec altitudes
+          interpol&eacute;es sur l'abscisse curviligne. Supporte les altitudes interm&eacute;diaires
+          (regards, changements de pente)</td>
+    </tr>
+    <tr>
+      <td><strong>Semer</strong></td>
+      <td><code>vba run [Trans3D]Semer</code></td>
+      <td>Mat&eacute;rialise des points cot&eacute;s (cercle rep&egrave;re + texte altitude) le long d'un
+          &eacute;l&eacute;ment 3D existant, &agrave; distance fixe ou en N points &eacute;galement r&eacute;partis</td>
+    </tr>
+    <tr>
+      <td><strong>Points</strong></td>
+      <td><code>vba run [Trans3D]Points</code></td>
+      <td>Cr&eacute;e un point 3D isol&eacute; depuis une position 2D (snap) et une altitude
+          cliqu&eacute;e ou saisie</td>
+    </tr>
+  </table>
+
+  <h3>Principe g&eacute;n&eacute;ral</h3>
+  <p>Les trois commandes partagent un formulaire modeless unique (<em>Tool Settings</em>)
+     et les m&ecirc;mes r&egrave;gles de cr&eacute;ation :</p>
+  <ul>
+    <li>Les <strong>sources d'altitude</strong> sont les textes simples, tags et cellules
+        contenant une valeur num&eacute;rique, dans le mod&egrave;le actif <em>et</em> les
+        r&eacute;f&eacute;rences attach&eacute;es</li>
+    <li>Le <strong>cercle rep&egrave;re</strong> est plac&eacute; au Z r&eacute;el (altitude calcul&eacute;e)</li>
+    <li>Le <strong>texte altitude</strong> est plac&eacute; &agrave; Z=0.00 (lisible en vue top sans
+        surcharger le mod&egrave;le) &mdash; ou au Z r&eacute;el si l'option est d&eacute;coch&eacute;e</li>
+    <li>Le Z du point snapp&eacute; n'est <strong>jamais</strong> utilis&eacute; : seule la cote
+        fournit l'altitude</li>
+  </ul>
+
+  <h3>Types d'&eacute;l&eacute;ments accept&eacute;s (Convertir)</h3>
+  <ul>
+    <li>Ligne, ligne bris&eacute;e, arc, courbe, B-spline, cercle, ellipse</li>
+    <li><strong>Type conserv&eacute;</strong> si possible : ligne &rarr; ligne 3D,
+        ligne bris&eacute;e &rarr; ligne bris&eacute;e 3D (Z aux sommets),
+        arc/cercle/ellipse &agrave; Z constant &rarr; type natif horizontal</li>
+    <li>Arc/courbe/B-spline avec pente &rarr; <strong>polyligne 3D discr&eacute;tis&eacute;e</strong>
+        au pas param&eacute;trable</li>
+  </ul>
+</section>
+
+<!-- ==================== INSTALLATION ==================== -->
+<section id="installation">
+  <h2>2. Installation</h2>
+
+  <h3>2.0 Installation automatique (recommand&eacute;e)</h3>
+  <p>T&eacute;l&eacute;charger le d&eacute;p&ocirc;t GitHub :
+     <a href="https://github.com/FredeHyeres/Trans3D/archive/refs/heads/main.zip">
+     <strong>t&eacute;l&eacute;chargement direct du ZIP</strong></a>
+     (ou <em>Code &gt; Download ZIP</em> sur
+     <a href="https://github.com/FredeHyeres/Trans3D">la page du d&eacute;p&ocirc;t</a>),
+     d&eacute;compresser,
+     puis double-cliquer sur <code>install.cmd</code> : le projet
+     <code>Trans3D.mvba</code> est copi&eacute; dans le workspace avec chargement
+     automatique au d&eacute;marrage.
+     Le <code>Default.mvba</code> personnel n'est jamais touch&eacute;.
+     Red&eacute;marrer MicroStation et c'est pr&ecirc;t. Les &eacute;tapes 2.1 et 2.2 ci-dessous
+     ne servent que pour une installation manuelle.</p>
+
+  <h3>2.1 Ouvrir le projet VBA (installation manuelle)</h3>
+  <ol>
+    <li>Dans MicroStation : <strong>Utilitaires &gt; Macros &gt; Gestionnaire de projets VBA</strong></li>
+    <li>Utilisez le projet <strong>Default</strong> (charg&eacute; automatiquement au d&eacute;marrage)
+        &mdash; ou cr&eacute;ez un projet d&eacute;di&eacute; si vous pr&eacute;f&eacute;rez</li>
+    <li>Ouvrez l'&eacute;diteur VBA : <kbd>Alt</kbd>+<kbd>F11</kbd></li>
+  </ol>
+
+  <h3>2.2 Importer les fichiers sources</h3>
+  <ol>
+    <li>Dans l'&eacute;diteur VBA : <strong>Fichier &gt; Importer un fichier</strong> (<kbd>Ctrl</kbd>+<kbd>M</kbd>)</li>
+    <li>Importez, un par un, depuis le dossier <code>src\</code> :
+      <table>
+        <tr><th>Fichier</th><th>Type attendu apr&egrave;s import</th></tr>
+        <tr><td><code>Trans3D.bas</code></td><td>Modules</td></tr>
+        <tr><td><code>RechercheAltitude.bas</code></td><td>Modules</td></tr>
+        <tr><td><code>RechercheElement.bas</code></td><td>Modules</td></tr>
+        <tr><td><code>CSettings.cls</code></td><td>Modules de classe</td></tr>
+        <tr><td><code>CSymboTexte.cls</code></td><td>Modules de classe</td></tr>
+        <tr><td><code>CSymboCercle.cls</code></td><td>Modules de classe</td></tr>
+        <tr><td><code>CPointRef.cls</code></td><td>Modules de classe</td></tr>
+        <tr><td><code>CCalcul.cls</code></td><td>Modules de classe</td></tr>
+        <tr><td><code>CGraphique.cls</code></td><td>Modules de classe</td></tr>
+        <tr><td><code>CParamSemis.cls</code></td><td>Modules de classe</td></tr>
+        <tr><td><code>CAltitudeSelection.cls</code></td><td>Modules de classe</td></tr>
+        <tr><td><code>CPlacerConvertir.cls</code></td><td>Modules de classe</td></tr>
+        <tr><td><code>CPlacerSemis.cls</code></td><td>Modules de classe</td></tr>
+        <tr><td><code>CPlacerPoints.cls</code></td><td>Modules de classe</td></tr>
+        <tr><td><code>frmTrans3D.frm</code> + <code>.frx</code></td><td>UserForm</td></tr>
+      </table>
+    </li>
+    <li><strong>D&eacute;bogage &gt; Compiler</strong> : aucune erreur ne doit appara&icirc;tre</li>
+    <li>Enregistrez (<kbd>Ctrl</kbd>+<kbd>S</kbd>)</li>
+  </ol>
+
+  <div class="attention">
+    &#9888;&#65039; Les fichiers <code>.cls</code> doivent arriver dans <strong>&laquo; Modules de classe &raquo;</strong>.
+    S'ils arrivent dans &laquo; Modules &raquo; avec des lignes <code>VERSION 1.0 CLASS</code> ou
+    <code>Attribute VB_Name</code> visibles, les fichiers sources ont des fins de ligne Unix (LF) :
+    convertissez-les en fins de ligne Windows (CRLF) puis r&eacute;importez.
+  </div>
+  <div class="attention">
+    &#9888;&#65039; Le fichier <code>frmTrans3D.frx</code> doit &ecirc;tre dans le <strong>m&ecirc;me dossier</strong>
+    que <code>frmTrans3D.frm</code> lors de l'import. Sans lui, l'import &eacute;choue avec
+    &laquo; Impossible de charger... &raquo;.
+  </div>
+
+  <h3>2.3 Chargement automatique</h3>
+  <p>Avec le <strong>Default MVBA</strong> : rien &agrave; faire, il est charg&eacute; d'office par
+     MicroStation &agrave; chaque d&eacute;marrage.</p>
+  <p>Avec un <code>.mvba</code> d&eacute;di&eacute; seulement : <em>Utilities &gt; Macros &gt;
+     Project Manager</em>, clic droit sur le projet &gt; <strong>Autoload</strong>.</p>
+
+  <h3>2.4 Mise &agrave; jour</h3>
+  <p>Pour r&eacute;cup&eacute;rer une nouvelle version, la m&eacute;thode la plus
+     rapide est de <strong>rejouer <code>install.cmd</code></strong> :</p>
+  <ol>
+    <li>Ret&eacute;l&eacute;charger le ZIP (ou <code>git pull</code> si vous avez clon&eacute;)</li>
+    <li>Fermer MicroStation</li>
+    <li>Double-cliquer sur <code>install.cmd</code></li>
+    <li>Relancer MicroStation</li>
+  </ol>
+  <p>Le script remplace <code>Trans3D.mvba</code> dans le workspace :
+     <strong>tous les modules, classes et formulaires sont mis &agrave; jour en un
+     seul geste</strong>, sans risque d'oublier un fichier.</p>
+</section>
+
+<!-- ==================== FORMULAIRE ==================== -->
+<section id="formulaire">
+  <h2>3. Formulaire (Tool Settings)</h2>
+  <p>
+    Au lancement de n'importe laquelle des trois commandes, le formulaire
+    <strong>Trans3D</strong> s'ouvre et reste visible pendant toute la dur&eacute;e de la
+    commande. Les param&egrave;tres sont modifiables &agrave; tout moment, m&ecirc;me entre deux
+    op&eacute;rations. Le formulaire est <strong>commun</strong> aux trois commandes.
+  </p>
+
+  <h3>Texte altitude</h3>
+  <ul>
+    <li><strong>Texte &agrave; Z=0.00</strong> (case coch&eacute;e par d&eacute;faut) : le texte est
+        cr&eacute;&eacute; &agrave; Z=0 (lisible en vue top). Case d&eacute;coch&eacute;e : le texte est
+        plac&eacute; au Z r&eacute;el de l'altitude</li>
+    <li><strong>Dupliquer le style de la cote</strong> (case coch&eacute;e par d&eacute;faut) :
+        police, taille, couleur, niveau et fond sont repris du texte source.
+        Case d&eacute;coch&eacute;e : les champs ci-dessous deviennent modifiables</li>
+    <li><strong>Hauteur</strong> : hauteur du texte en unit&eacute;s ma&icirc;tre</li>
+    <li><strong>Coul.</strong> : index couleur MicroStation 0&ndash;255
+        (0=blanc, 1=bleu, 2=vert, 3=rouge, 4=jaune)</li>
+    <li><strong>Niveau</strong> : liste des niveaux existants du fichier DGN</li>
+    <li><strong>Police</strong> : nom de la police de caract&egrave;res</li>
+    <li><strong>Fond</strong> : activer/d&eacute;sactiver le fond (masque) du texte</li>
+    <li><strong>D&eacute;cimales</strong> : nombre de d&eacute;cimales (0&ndash;6, d&eacute;faut 2)</li>
+    <li><strong>Virgule</strong> : utiliser la virgule comme s&eacute;parateur d&eacute;cimal
+        (par d&eacute;faut : point). La lecture des cotes 2D accepte les deux s&eacute;parateurs</li>
+  </ul>
+
+  <h3>Cercle rep&egrave;re (au Z r&eacute;el)</h3>
+  <ul>
+    <li><strong>Cr&eacute;er le cercle</strong> : activer/d&eacute;sactiver la cr&eacute;ation du cercle rep&egrave;re</li>
+    <li><strong>Diam&egrave;tre</strong> : en unit&eacute;s ma&icirc;tre (ex. <code>0.50</code>)</li>
+    <li><strong>Couleur</strong> : index MicroStation 0&ndash;255</li>
+    <li><strong>Niveau</strong> : liste des niveaux existants du fichier DGN</li>
+  </ul>
+
+  <h3>D&eacute;coupage <small>(utilis&eacute; par Convertir)</small></h3>
+  <ul>
+    <li><strong>Cr&eacute;er des points interm&eacute;diaires</strong> : si coch&eacute;, des points cot&eacute;s
+        (cercle + texte) sont plac&eacute;s le long de l'&eacute;l&eacute;ment 3D cr&eacute;&eacute; par Convertir</li>
+    <li><strong>Distance fixe (m)</strong> : un point tous les N m&egrave;tres le long de l'&eacute;l&eacute;ment</li>
+    <li><strong>Nombre de points</strong> : N points &eacute;galement r&eacute;partis</li>
+  </ul>
+
+  <h3>Convertir</h3>
+  <ul>
+    <li><strong>Pas discr&eacute;tisation</strong> : pas de discr&eacute;tisation pour les courbes
+        avec pente (arc, B-spline &rarr; polyligne 3D). Plus le pas est petit,
+        plus la polyligne est pr&eacute;cise</li>
+    <li><strong>Symbologie de l'&eacute;l&eacute;ment source</strong> : si coch&eacute;, l'&eacute;l&eacute;ment 3D reprend
+        le niveau, la couleur et le style de l'&eacute;l&eacute;ment 2D source. Sinon, les attributs
+        actifs de MicroStation sont utilis&eacute;s</li>
+  </ul>
+
+  <h3>Recherche</h3>
+  <ul>
+    <li><strong>Tol&eacute;rance clic (u.m.)</strong> : rayon de recherche autour du clic pour
+        trouver un texte/tag/cellule d'altitude ou un &eacute;l&eacute;ment lin&eacute;aire.
+        Augmenter si rien n'est trouv&eacute;, r&eacute;duire si le mauvais &eacute;l&eacute;ment est attrap&eacute;</li>
+  </ul>
+
+  <h3>&Eacute;tat (lecture seule)</h3>
+  <ul>
+    <li><strong>Ligne 1</strong> : &eacute;l&eacute;ment s&eacute;lectionn&eacute; (type, longueur) ou position fix&eacute;e</li>
+    <li><strong>Ligne 2</strong> : altitudes d&eacute;part / arriv&eacute;e, pente courante</li>
+  </ul>
+</section>
+
+<!-- ==================== CONVERTIR ==================== -->
+<section id="convertir">
+  <h2>4. Utilisation &mdash; Convertir (2D &rarr; 3D)</h2>
+  <p>
+    La commande <strong>Convertir</strong> cr&eacute;e l'&eacute;quivalent 3D d'un &eacute;l&eacute;ment 2D
+    avec des altitudes interpol&eacute;es lin&eacute;airement sur l'abscisse curviligne
+    (longueur d&eacute;velopp&eacute;e, pas la corde).
+  </p>
+
+  <div class="etapes">
+    <div class="etape"><span class="num">1</span><br>S&eacute;lection<br><strong>&eacute;l&eacute;ment 2D</strong></div>
+    <div class="etape"><span class="num">2</span><br>Clic<br><strong>Z d&eacute;part</strong></div>
+    <div class="etape"><span class="num">3</span><br>Clic<br><strong>Z fin</strong></div>
+    <div class="etape"><span class="num">4</span><br>Interm&eacute;diaires<br><small>Data=ajouter<br>Reset=cr&eacute;er</small></div>
+  </div>
+
+  <ol>
+    <li><strong>Lancement</strong> : <code>vba run [Trans3D]Convertir</code> &mdash; le formulaire
+        <strong>Trans3D</strong> s'ouvre. L'&eacute;l&eacute;ment 2D le plus proche est
+        <strong>surlign&eacute;</strong> dynamiquement sous le curseur.</li>
+    <li><strong>S&eacute;lection de l'&eacute;l&eacute;ment 2D</strong> : cliquez pr&egrave;s d'une ligne, polyligne,
+        arc, courbe, B-spline, cercle ou ellipse dans une r&eacute;f&eacute;rence 2D (ou le mod&egrave;le actif).
+        Le type et la longueur s'affichent dans le cadre &Eacute;tat.
+        <strong>Reset</strong> = quitter la commande.</li>
+    <li><strong>Clic Z d&eacute;part</strong> : cliquez &agrave; proximit&eacute; d'un texte, tag ou cellule
+        d'altitude. L'altitude est lue automatiquement et affich&eacute;e dans le formulaire.
+        <strong>Reset</strong> = revenir &agrave; la s&eacute;lection (&eacute;tape 1).
+        <br><em>Cercle/ellipse complet</em> : une seule altitude suffit (Z constant),
+        la cr&eacute;ation suit imm&eacute;diatement.</li>
+    <li><strong>Clic Z fin</strong> : idem. L'aper&ccedil;u 3D et la pente s'affichent en dynamique.
+        <strong>Reset</strong> = revenir au Z d&eacute;part (&eacute;tape 2).</li>
+    <li><strong>Altitudes interm&eacute;diaires</strong> (0..N) : permet d'ajouter des points
+        de changement de pente (regards, cassures).
+      <ul>
+        <li><strong>Data</strong> = cliquer sur une cote d'altitude interm&eacute;diaire
+            (projet&eacute;e sur l'&eacute;l&eacute;ment). R&eacute;p&eacute;table</li>
+        <li><strong>Reset</strong> = <strong>cr&eacute;er l'&eacute;l&eacute;ment 3D</strong> et retourner
+            &agrave; la s&eacute;lection (&eacute;tape 1)</li>
+      </ul>
+    </li>
+  </ol>
+
+  <div class="astuce">
+    &#9989; L'interpolation est <strong>lin&eacute;aire par tron&ccedil;ons</strong> sur l'abscisse
+    curviligne : s'il y a des altitudes interm&eacute;diaires, le Z varie lin&eacute;airement entre
+    chaque paire de cotes successives (d&eacute;part &rarr; interm. 1 &rarr; interm. 2 &rarr; &hellip; &rarr; fin).
+  </div>
+  <div class="astuce">
+    &#9989; Si <strong>Symbologie de l'&eacute;l&eacute;ment source</strong> est coch&eacute; (cadre Convertir),
+    l'&eacute;l&eacute;ment 3D reprend le niveau, la couleur et le style de l'&eacute;l&eacute;ment 2D. Le niveau
+    est cr&eacute;&eacute; automatiquement dans le fichier actif s'il n'existe pas.
+  </div>
+  <div class="astuce">
+    &#9989; Si <strong>D&eacute;coupage</strong> est activ&eacute;, des points cot&eacute;s (cercle + texte)
+    sont plac&eacute;s le long de l'&eacute;l&eacute;ment 3D cr&eacute;&eacute;, aux extr&eacute;mit&eacute;s et aux positions
+    interm&eacute;diaires, plus une fl&egrave;che de direction.
+  </div>
+  <div class="attention">
+    &#9888;&#65039; Les courbes avec pente (arc, B-spline) sont <strong>discr&eacute;tis&eacute;es</strong>
+    en polyligne 3D au pas d&eacute;fini dans le formulaire. Un pas trop grand donne une
+    polyligne anguleuse ; un pas trop petit alourdit le fichier.
+  </div>
+</section>
+
+<!-- ==================== SEMER ==================== -->
+<section id="semer">
+  <h2>5. Utilisation &mdash; Semer (points cot&eacute;s sur un &eacute;l&eacute;ment 3D)</h2>
+  <p>
+    La commande <strong>Semer</strong> mat&eacute;rialise des points cot&eacute;s le long d'un
+    &eacute;l&eacute;ment lin&eacute;aire 3D existant. Le Z de chaque point est interpol&eacute; sur la
+    g&eacute;om&eacute;trie 3D r&eacute;elle de l'&eacute;l&eacute;ment.
+  </p>
+
+  <div class="etapes">
+    <div class="etape"><span class="num">1</span><br>S&eacute;lection<br><strong>&eacute;l&eacute;ment 3D</strong></div>
+    <div class="etape"><span class="num">2</span><br>Aper&ccedil;u<br><small>Data=cr&eacute;er<br>Reset=annuler</small></div>
+  </div>
+
+  <ol>
+    <li><strong>Lancement</strong> : <code>vba run [Trans3D]Semer</code> &mdash; le formulaire
+        <strong>Trans3D</strong> s'ouvre.</li>
+    <li><strong>S&eacute;lection de l'&eacute;l&eacute;ment 3D</strong> : cliquez pr&egrave;s d'un &eacute;l&eacute;ment lin&eacute;aire
+        du mod&egrave;le actif (issu de Trans3D ou non). L'&eacute;l&eacute;ment est <strong>surlign&eacute;</strong>
+        pendant l'aper&ccedil;u.
+        <strong>Reset</strong> = quitter la commande.</li>
+    <li><strong>Aper&ccedil;u et cr&eacute;ation</strong> : l'aper&ccedil;u dynamique montre les points
+        sem&eacute;s selon les param&egrave;tres du cadre <em>D&eacute;coupage</em> du formulaire
+        (modifiables en direct).
+      <ul>
+        <li><strong>Data</strong> = cr&eacute;er tous les points cot&eacute;s, puis retour &agrave; la
+            s&eacute;lection (&eacute;tape 1) pour un autre &eacute;l&eacute;ment</li>
+        <li><strong>Reset</strong> = abandonner cet &eacute;l&eacute;ment, retour &agrave; la s&eacute;lection (&eacute;tape 1)</li>
+      </ul>
+    </li>
+  </ol>
+
+  <h3>Modes de r&eacute;partition</h3>
+  <table>
+    <tr><th>Mode</th><th>Comportement</th></tr>
+    <tr>
+      <td><strong>Distance fixe</strong></td>
+      <td>Un point au d&eacute;part, puis tous les N m&egrave;tres (ex. 0,50 m), et un point &agrave;
+          la fin m&ecirc;me si le dernier intervalle est plus court</td>
+    </tr>
+    <tr>
+      <td><strong>Nombre de points</strong></td>
+      <td>N points &eacute;galement r&eacute;partis sur la longueur d&eacute;velopp&eacute;e</td>
+    </tr>
+  </table>
+
+  <h3>Objets cr&eacute;&eacute;s par point</h3>
+  <ul>
+    <li><strong>Cercle rep&egrave;re</strong> au Z r&eacute;el (le point exploitable pour la mod&eacute;lisation)</li>
+    <li><strong>Texte d'altitude</strong> &agrave; Z=0.00 (lisible en vue top) &mdash; chacun activable
+        dans le formulaire</li>
+  </ul>
+
+  <div class="astuce">
+    &#9989; Les param&egrave;tres du cadre <em>D&eacute;coupage</em> (distance fixe / nombre de points)
+    sont ajustables <strong>en direct</strong> pendant l'aper&ccedil;u : l'affichage se met &agrave; jour
+    imm&eacute;diatement.
+  </div>
+</section>
+
+<!-- ==================== POINTS ==================== -->
+<section id="points">
+  <h2>6. Utilisation &mdash; Points (point 3D isol&eacute;)</h2>
+  <p>
+    La commande <strong>Points</strong> cr&eacute;e un point 3D &agrave; partir d'une position 2D
+    (snap pr&eacute;cis : sommet, intersection&hellip;) et d'une altitude cliqu&eacute;e sur le plan.
+  </p>
+
+  <div class="etapes">
+    <div class="etape"><span class="num">1</span><br>Snap<br><strong>position XY</strong></div>
+    <div class="etape"><span class="num">2</span><br>Clic<br><strong>altitude</strong></div>
+  </div>
+
+  <ol>
+    <li><strong>Lancement</strong> : <code>vba run [Trans3D]Points</code> &mdash; le formulaire
+        <strong>Trans3D</strong> s'ouvre.</li>
+    <li><strong>Position XY</strong> : cliquez/snappez sur le point terrain exact
+        (sommet, intersection, centre&hellip;). La position est m&eacute;moris&eacute;e et affich&eacute;e
+        dans le cadre &Eacute;tat.
+        <strong>Reset</strong> = quitter la commande.</li>
+    <li><strong>Altitude</strong> : cliquez &agrave; proximit&eacute; d'un texte/tag/cellule d'altitude.
+        Le point cot&eacute; (cercle au Z r&eacute;el + texte altitude) est cr&eacute;&eacute; imm&eacute;diatement,
+        puis retour &agrave; l'&eacute;tape 1 pour le point suivant.
+        <strong>Reset</strong> = revenir &agrave; la position (&eacute;tape 1).</li>
+  </ol>
+
+  <div class="astuce">
+    &#9989; La commande est <strong>r&eacute;p&eacute;titive</strong> : apr&egrave;s la cr&eacute;ation d'un point,
+    on repart directement au snap de la position suivante. Pratique pour semer
+    une s&eacute;rie de points isol&eacute;s (regards, bouches &agrave; cl&eacute;&hellip;).
+  </div>
+  <div class="attention">
+    &#9888;&#65039; Le Z du point snapp&eacute; (qui d&eacute;pend de l'&eacute;l&eacute;ment vis&eacute; par le snap)
+    n'est <strong>jamais utilis&eacute;</strong> : seule la cote cliqu&eacute;e fournit l'altitude.
+  </div>
+</section>
+
+<!-- ==================== KEY-IN ==================== -->
+<section id="keyin">
+  <h2>7. Lancement par key-in</h2>
+  <ol>
+    <li>Ouvrez la fen&ecirc;tre de saisie : <strong>Utilitaires &gt; Saisie au clavier</strong> (Key-in)</li>
+    <li>Tapez l'un des key-in suivants :
+      <table>
+        <tr><th>Commande</th><th>Key-in</th></tr>
+        <tr><td>Convertir</td><td><code>vba run [Trans3D]Convertir</code></td></tr>
+        <tr><td>Semer</td><td><code>vba run [Trans3D]Semer</code></td></tr>
+        <tr><td>Points</td><td><code>vba run [Trans3D]Points</code></td></tr>
+      </table>
+    </li>
+    <li>Validez par <kbd>Entr&eacute;e</kbd></li>
+  </ol>
+  <div class="astuce">
+    &#9989; La fen&ecirc;tre Key-in garde l'historique : <kbd>&#8593;</kbd> puis <kbd>Entr&eacute;e</kbd>
+    pour relancer la derni&egrave;re commande.
+  </div>
+</section>
+
+<!-- ==================== TOUCHE DE FONCTION ==================== -->
+<section id="fonction">
+  <h2>8. Lancement par touche de fonction</h2>
+  <ol>
+    <li>Menu <strong>Utilitaires &gt; Touches de fonction</strong></li>
+    <li>S&eacute;lectionnez trois touches libres, par exemple <kbd>F6</kbd>, <kbd>F7</kbd>
+        et <kbd>F8</kbd> (les combinaisons <kbd>Ctrl</kbd>/<kbd>Alt</kbd>/<kbd>Maj</kbd>+F
+        sont aussi possibles)</li>
+    <li>Dans le champ <strong>Action</strong>, saisissez pour chaque touche :
+      <table>
+        <tr><th>Touche</th><th>Key-in</th></tr>
+        <tr><td><kbd>F6</kbd></td><td><code>vba run [Trans3D]Convertir</code></td></tr>
+        <tr><td><kbd>F7</kbd></td><td><code>vba run [Trans3D]Semer</code></td></tr>
+        <tr><td><kbd>F8</kbd></td><td><code>vba run [Trans3D]Points</code></td></tr>
+      </table>
+    </li>
+    <li>Cliquez <strong>OK</strong> &mdash; le menu de touches de fonction est enregistr&eacute;
+        (fichier <code>.mnu</code> du workspace)</li>
+  </ol>
+  <p>Un appui sur <kbd>F6</kbd> lance Convertir, <kbd>F7</kbd> lance Semer,
+     <kbd>F8</kbd> lance Points.</p>
+</section>
+
+<!-- ==================== DEPANNAGE ==================== -->
+<section id="depannage">
+  <h2>9. D&eacute;pannage rapide</h2>
+  <table>
+    <tr><th>Sympt&ocirc;me</th><th>Cause / rem&egrave;de</th></tr>
+    <tr>
+      <td>&laquo; Ouvrez d'abord un fichier DGN &raquo;</td>
+      <td>Aucun dessin actif : ouvrez un DGN avant de lancer la commande.</td>
+    </tr>
+    <tr>
+      <td>&laquo; Aucun texte altitude &agrave; proximit&eacute; &raquo;</td>
+      <td>Cliquez plus pr&egrave;s de l'origine du texte/tag, ou l'&eacute;l&eacute;ment n'est pas
+          num&eacute;rique. V&eacute;rifiez aussi que le niveau n'est pas gel&eacute;.</td>
+    </tr>
+    <tr>
+      <td>&laquo; Aucun &eacute;l&eacute;ment lin&eacute;aire &agrave; proximit&eacute; &raquo;</td>
+      <td>Cliquez plus pr&egrave;s de l'&eacute;l&eacute;ment, ou augmentez la tol&eacute;rance dans le formulaire.
+          Seuls les types lin&eacute;aires sont accept&eacute;s (pas les surfaces, cellules, textes).</td>
+    </tr>
+    <tr>
+      <td>Pas d'aper&ccedil;u dynamique</td>
+      <td>V&eacute;rifiez que le projet est bien compil&eacute; (D&eacute;bogage &gt; Compiler).
+          Supprimer puis r&eacute;importer la classe de placement si n&eacute;cessaire.</td>
+    </tr>
+    <tr>
+      <td>Erreurs de compilation &laquo; membre introuvable &raquo;</td>
+      <td>V&eacute;rifiez <strong>Outils &gt; R&eacute;f&eacute;rences</strong> : la
+          &laquo; Bentley MicroStation DGN 8.9 Object Library &raquo; doit &ecirc;tre coch&eacute;e et pointer
+          vers l'installation V8i active.</td>
+    </tr>
+    <tr>
+      <td>Les <code>.cls</code> s'importent comme modules standard</td>
+      <td>Fins de ligne Unix (LF) dans les fichiers : convertir en CRLF puis r&eacute;importer.</td>
+    </tr>
+    <tr>
+      <td>Import du <code>.frm</code> &eacute;choue</td>
+      <td>Le fichier <code>frmTrans3D.frx</code> doit &ecirc;tre dans le m&ecirc;me dossier
+          que <code>frmTrans3D.frm</code>. En dernier recours : Insertion &gt; UserForm,
+          nommer le formulaire <code>frmTrans3D</code>, puis coller le code &agrave; partir de
+          <code>Option Explicit</code> &mdash; les contr&ocirc;les sont cr&eacute;&eacute;s au runtime.</td>
+    </tr>
+    <tr>
+      <td>Le texte cr&eacute;&eacute; n'a pas le bon style</td>
+      <td>V&eacute;rifiez que <strong>Dupliquer le style de la cote</strong> est coch&eacute; dans
+          le formulaire, et que le texte source est bien un texte simple (pas un champ
+          de cellule sans style accessible).</td>
+    </tr>
+    <tr>
+      <td>L'&eacute;l&eacute;ment 3D a un Z uniforme alors qu'il devrait avoir une pente</td>
+      <td>V&eacute;rifiez que les altitudes de d&eacute;part et de fin sont diff&eacute;rentes.
+          Pour un cercle/ellipse, le Z est toujours constant (une seule altitude).</td>
+    </tr>
+    <tr>
+      <td>Niveau manquant dans le fichier 3D</td>
+      <td>Le niveau de l'&eacute;l&eacute;ment source est cr&eacute;&eacute; automatiquement dans le fichier actif.
+          Si le niveau du texte ou du cercle manque, s&eacute;lectionnez-le dans la combo
+          du formulaire.</td>
+    </tr>
+  </table>
+</section>
+
+</main>
+
+<footer>
+  Trans3D &mdash; MicroStation V8i SS3 (08.11.09.578) &middot; Mode d'emploi &middot; Juillet 2026
+</footer>
+
+</body>
+</html>
