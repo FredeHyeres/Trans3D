@@ -228,34 +228,20 @@ End Function
 ' reference : on detecte alors un texte numerique proche dans le mauvais repere.
 ' Public : utilise aussi par CGraphique pour les sommets des elements 2D.
 '
-' PIEGE (verifie sur DGN reel, module Reseaux d'InterpolationTopo puis
-' premier test Trans3D) : MicroStation renvoie les coordonnees scannees dans
-' un espace DEJA compatible avec le master. Le ScaleFactor de l'attachement
-' est une echelle graphique du CONTENU (taille visuelle), pas des positions :
-' l'appliquer decale et dilate tout (detection impossible sous une tolerance
-' enorme, elements crees a la mauvaise echelle). On applique uniquement la
-' translation MasterOrigin - ReferenceOrigin.
+' Translation reference -> master par MasterOrigin seule (KB 8.4).
+' Les coordonnees scannees sont deja compatibles master : seule la
+' translation d'origine est necessaire, pas de rotation ni d'echelle.
+' ReferenceOrigin n'est PAS une propriete (KB 8.2) : on ne l'utilise pas.
 Public Sub TransformerPointVersMaitre(oAttachment As Object, _
         oPtSource As Point3d, oPtMaster As Point3d)
 
     oPtMaster = oPtSource
     If oAttachment Is Nothing Then Exit Sub
 
-    Dim ptRefOrigin As Point3d
     Dim ptMasterOrigin As Point3d
-
-    ptRefOrigin.X = 0#: ptRefOrigin.Y = 0#: ptRefOrigin.Z = 0#
     ptMasterOrigin.X = 0#: ptMasterOrigin.Y = 0#: ptMasterOrigin.Z = 0#
 
-    ' Propriete des attachements V8i : point origine dans la reference.
     On Error Resume Next
-    ptRefOrigin = oAttachment.ReferenceOrigin
-    If Err.Number <> 0 Then
-        Err.Clear
-        ptRefOrigin.X = 0#: ptRefOrigin.Y = 0#: ptRefOrigin.Z = 0#
-    End If
-
-    ' Propriete des attachements V8i : point correspondant dans le modele actif.
     ptMasterOrigin = oAttachment.MasterOrigin
     If Err.Number <> 0 Then
         Err.Clear
@@ -263,9 +249,9 @@ Public Sub TransformerPointVersMaitre(oAttachment As Object, _
     End If
     On Error GoTo 0
 
-    oPtMaster.X = ptMasterOrigin.X + (oPtSource.X - ptRefOrigin.X)
-    oPtMaster.Y = ptMasterOrigin.Y + (oPtSource.Y - ptRefOrigin.Y)
-    oPtMaster.Z = ptMasterOrigin.Z + (oPtSource.Z - ptRefOrigin.Z)
+    oPtMaster.X = ptMasterOrigin.X + oPtSource.X
+    oPtMaster.Y = ptMasterOrigin.Y + oPtSource.Y
+    oPtMaster.Z = ptMasterOrigin.Z + oPtSource.Z
 End Sub
 
 '------------------------------------------------------------------------------

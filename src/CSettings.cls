@@ -31,7 +31,7 @@ Public oTexte           As CSymboTexte      ' symbologie et format du texte
 Public oCercle          As CSymboCercle     ' symbologie du cercle repere
 Public oSemis           As CParamSemis      ' repartition des points semes
 
-Public bCreerTexte      As Boolean          ' Semer/Points : creer le texte altitude
+Public bTexteAZero      As Boolean          ' Semer/Points : texte a Z=0.00 (sinon Z reel)
 Public bCreerCercle     As Boolean          ' Semer/Points : creer le cercle repere
 
 Public bSymboSource     As Boolean          ' Convertir : True = dupliquer la
@@ -56,7 +56,7 @@ Sub Init()
     Set oSemis = New CParamSemis
     oSemis.InitDefauts
 
-    bCreerTexte = True
+    bTexteAZero = False
     bCreerCercle = True
     bSymboSource = True
     bDecoupage = False

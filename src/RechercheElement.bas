@@ -152,29 +152,17 @@ Inconnu:
 End Function
 
 '------------------------------------------------------------------------------
-' Inverse de TransformerPointVersMaitre : ramene un point du repere du modele
-' actif dans le repere de la reference. Translation seule, comme l'aller :
-' le ScaleFactor est une echelle graphique du contenu, pas des positions
-' (piege verifie sur DGN reel, cf. RechercheAltitude.bas).
+' Translation inverse master -> reference par MasterOrigin seule (KB 8.4).
 Private Sub TransformerPointVersRef(oAttachment As Object, _
         oPtMaster As Point3d, oPtRef As Point3d)
 
     oPtRef = oPtMaster
     If oAttachment Is Nothing Then Exit Sub
 
-    Dim ptRefOrigin As Point3d
     Dim ptMasterOrigin As Point3d
-
-    ptRefOrigin.X = 0#: ptRefOrigin.Y = 0#: ptRefOrigin.Z = 0#
     ptMasterOrigin.X = 0#: ptMasterOrigin.Y = 0#: ptMasterOrigin.Z = 0#
 
     On Error Resume Next
-    ptRefOrigin = oAttachment.ReferenceOrigin
-    If Err.Number <> 0 Then
-        Err.Clear
-        ptRefOrigin.X = 0#: ptRefOrigin.Y = 0#: ptRefOrigin.Z = 0#
-    End If
-
     ptMasterOrigin = oAttachment.MasterOrigin
     If Err.Number <> 0 Then
         Err.Clear
@@ -182,9 +170,9 @@ Private Sub TransformerPointVersRef(oAttachment As Object, _
     End If
     On Error GoTo 0
 
-    oPtRef.X = ptRefOrigin.X + (oPtMaster.X - ptMasterOrigin.X)
-    oPtRef.Y = ptRefOrigin.Y + (oPtMaster.Y - ptMasterOrigin.Y)
-    oPtRef.Z = ptRefOrigin.Z + (oPtMaster.Z - ptMasterOrigin.Z)
+    oPtRef.X = oPtMaster.X - ptMasterOrigin.X
+    oPtRef.Y = oPtMaster.Y - ptMasterOrigin.Y
+    oPtRef.Z = oPtMaster.Z - ptMasterOrigin.Z
 End Sub
 
 '------------------------------------------------------------------------------

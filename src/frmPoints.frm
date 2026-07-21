@@ -1,5 +1,5 @@
 VERSION 5.00
-Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmPoints
+Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmPoints 
    Caption         =   "UserForm1"
    ClientHeight    =   3015
    ClientLeft      =   120
@@ -245,7 +245,7 @@ Sub Initialiser(oSettings As CSettings)
     RemplirNiveaux cmbNiveauCercle
 
     ' Texte altitude
-    chkCreerTexte.Value = m_oSettings.bCreerTexte
+    chkCreerTexte.Value = m_oSettings.bTexteAZero
     chkTexteModele.Value = m_oSettings.oTexte.CommeModele
     txtHauteur.Text = Format$(m_oSettings.oTexte.Hauteur, "0.00")
     txtCouleurTexte.Text = CStr(m_oSettings.oTexte.Couleur)
@@ -394,7 +394,7 @@ End Sub
 Private Sub chkCreerTexte_Change()
     If m_bInit Then Exit Sub
     If m_oSettings Is Nothing Then Exit Sub
-    m_oSettings.bCreerTexte = (chkCreerTexte.Value = True)
+    m_oSettings.bTexteAZero = (chkCreerTexte.Value = True)
 End Sub
 
 Private Sub chkTexteModele_Change()
@@ -526,3 +526,4 @@ Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
         CommandState.StartDefaultCommand
     End If
 End Sub
+

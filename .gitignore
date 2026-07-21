@@ -2,4 +2,5 @@
 *.dgn.bak
 Test.dgn
 Thumbs.db
+*.log
 src/README_V2.md

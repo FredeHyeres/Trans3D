@@ -285,7 +285,7 @@ Sub Initialiser(oSettings As CSettings)
     m_bInit = True
 
     ' Texte altitude
-    chkCreerTexte.Value = m_oSettings.bCreerTexte
+    chkCreerTexte.Value = m_oSettings.bTexteAZero
     chkTexteModele.Value = m_oSettings.oTexte.CommeModele
     txtHauteur.Text = Format$(m_oSettings.oTexte.Hauteur, "0.00")
     txtCouleurTexte.Text = CStr(m_oSettings.oTexte.Couleur)
@@ -401,7 +401,7 @@ End Sub
 Private Sub chkCreerTexte_Change()
     If m_bInit Then Exit Sub
     If m_oSettings Is Nothing Then Exit Sub
-    m_oSettings.bCreerTexte = (chkCreerTexte.Value = True)
+    m_oSettings.bTexteAZero = (chkCreerTexte.Value = True)
 End Sub
 
 Private Sub chkTexteModele_Change()

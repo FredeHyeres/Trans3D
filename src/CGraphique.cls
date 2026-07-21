@@ -70,7 +70,7 @@ End Sub
 Private Sub SyncNiveauxDepuisRef(oAtt As Object)
     On Error Resume Next
     Dim oLevels As Object
-    Set oLevels = oAtt.Levels
+    Set oLevels = oAtt.DesignFile.Levels
     If oLevels Is Nothing Then Exit Sub
     If Err.Number <> 0 Then Err.Clear: Exit Sub
 
@@ -269,22 +269,7 @@ Private Function DiscretiserEllipse(oElem As Element, _
     Dim ptC As Point3d, dR1 As Double, dR2 As Double
     Dim oRot As Matrix3d
     On Error GoTo Echec
-    ' Le centre n'est pas expose sous le meme nom selon les versions :
-    ' tentative CenterPoint puis Origin en liaison tardive.
-    Dim oObj As Object
-    Set oObj = oEll
-    Dim bCentreOk As Boolean
-    bCentreOk = False
-    On Error Resume Next
-    ptC = oObj.CenterPoint
-    If Err.Number = 0 Then bCentreOk = True
-    If Not bCentreOk Then
-        Err.Clear
-        ptC = oObj.Origin
-        If Err.Number = 0 Then bCentreOk = True
-    End If
-    On Error GoTo Echec
-    If Not bCentreOk Then Exit Function
+    ptC = oEll.CenterPoint
 
     dR1 = oEll.PrimaryRadius
     dR2 = oEll.SecondaryRadius
@@ -422,21 +407,8 @@ Function CreerCercle3DZConstant(oEllSource As Element, ByVal dZ As Double, _
     Set oEll = oEllSource
 
     On Error GoTo Echec
-    Dim oObj As Object
-    Set oObj = oEll
     Dim ptC As Point3d
-    Dim bCentreOk As Boolean
-    bCentreOk = False
-    On Error Resume Next
-    ptC = oObj.CenterPoint
-    If Err.Number = 0 Then bCentreOk = True
-    If Not bCentreOk Then
-        Err.Clear
-        ptC = oObj.Origin
-        If Err.Number = 0 Then bCentreOk = True
-    End If
-    On Error GoTo Echec
-    If Not bCentreOk Then Exit Function
+    ptC = oEll.CenterPoint
 
     Dim ptCM As Point3d
     TransformerPointVersMaitre oAttachment, ptC, ptCM
@@ -490,7 +462,7 @@ Sub CreerPointCote(ByVal dXpt As Double, ByVal dYpt As Double, _
     Dim ptTexte As Point3d
     ptTexte.X = dXpt + oSettings.oCercle.Rayon * 1.5
     ptTexte.Y = dYpt
-    If oSettings.bCreerTexte Then
+    If oSettings.bTexteAZero Then
         ptTexte.Z = 0#
     Else
         ptTexte.Z = dZpt
@@ -569,7 +541,7 @@ Sub DessinPointCoteDyn(ByVal DrawMode As MsdDrawingMode, _
     Dim ptTexte As Point3d
     ptTexte.X = dXpt + oSettings.oCercle.Rayon * 1.5
     ptTexte.Y = dYpt
-    If oSettings.bCreerTexte Then
+    If oSettings.bTexteAZero Then
         ptTexte.Z = 0#
     Else
         ptTexte.Z = dZpt
