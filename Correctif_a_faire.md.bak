@@ -1,0 +1,172 @@
+# Trans3D - Correctifs a faire
+
+Recapitulatif des problemes identifies lors de l'analyse croisee code / base de
+connaissances (`KNOWLEDGE_BASE_MST_VBA.md`), consolides par le sondage runtime
+(`DiagKB.bas`) et la doc officielle (CHM). Priorite decroissante.
+
+| # | Priorite | Sujet | Fichier(s) |
+|---|---|---|---|
+| 1 | HAUT | Ellipse : `CenterPoint` lu en liaison tardive -> echec | `CGraphique.cls` |
+| 2 | MOYEN | `Attachment.ReferenceOrigin` n'est pas une propriete | `RechercheAltitude.bas`, `RechercheElement.bas` |
+| 3 | BASSE | `bCreerTexte` : nom trompeur | `CSettings.cls` (+ commentaires/spec) |
+| 4 | BASSE | Fichier parasite `frmTrans3D.log` | racine `src/` |
+| 5 | A VALIDER | `Attachment.Levels` en `For Each` | `CGraphique.cls` |
+
+---
+
+## 1. [HAUT] Ellipse : `CenterPoint` lu en liaison tardive
+
+**Constat.** `CGraphique.DiscretiserEllipse` et `CGraphique.CreerCercle3DZConstant`
+recuperent le centre de l'ellipse en **liaison tardive** (`Set oObj As Object`
+puis `oObj.CenterPoint`), avec repli sur `oObj.Origin`.
+
+**Cause (confirmee CHM + DiagKB).**
+- `EllipseElement.CenterPoint` **existe** (Read/Write Point3d, meme membre que sur
+  ArcElement) mais c'est un membre type-specifique : en liaison tardive il rend
+  **ERR 438** (piege KB 4.1). DiagKB l'a reproduit sur `MST_REF.dgn`.
+- `Origin` **ne s'applique pas** a `EllipseElement` (le repli est donc vain).
+- Resultat : sur un poste ou le late rend 438, les deux tentatives echouent ->
+  l'ellipse est declaree "type non supporte" alors qu'elle est parfaitement
+  convertible. Discretisation et cercle 3D a Z constant cassent.
+
+A noter : `DiscretiserArc` fait deja l'acces en **early binding** (`oArc.CenterPoint`)
+et n'a pas le probleme. Seules les deux fonctions ellipse sont touchees.
+
+**Correctif : acces direct (early binding), plus de repli sur Origin.**
+
+`DiscretiserEllipse` - remplacer le bloc de recuperation du centre :
+
+```vba
+' AVANT
+Dim oObj As Object
+Set oObj = oEll
+Dim bCentreOk As Boolean
+bCentreOk = False
+On Error Resume Next
+ptC = oObj.CenterPoint
+If Err.Number = 0 Then bCentreOk = True
+If Not bCentreOk Then
+    Err.Clear
+    ptC = oObj.Origin
+    If Err.Number = 0 Then bCentreOk = True
+End If
+On Error GoTo Echec
+If Not bCentreOk Then Exit Function
+
+' APRES
+ptC = oEll.CenterPoint      ' EllipseElement.CenterPoint existe (KB 4.8) ; le
+                            ' late binding rendait 438 (piege 4.1)
+```
+
+`CreerCercle3DZConstant` - meme remplacement :
+
+```vba
+' AVANT
+Dim oObj As Object
+Set oObj = oEll
+Dim ptC As Point3d
+Dim bCentreOk As Boolean
+bCentreOk = False
+On Error Resume Next
+ptC = oObj.CenterPoint
+If Err.Number = 0 Then bCentreOk = True
+If Not bCentreOk Then
+    Err.Clear
+    ptC = oObj.Origin
+    If Err.Number = 0 Then bCentreOk = True
+End If
+On Error GoTo Echec
+If Not bCentreOk Then Exit Function
+
+' APRES
+Dim ptC As Point3d
+ptC = oEll.CenterPoint      ' early binding (KB 4.8)
+```
+
+`oEll` est deja typee `EllipseElement` dans les deux fonctions ; garder le
+`On Error GoTo Echec` qui protege le reste (rayons, rotation).
+
+**Reference KB.** Section 4.8 (bloc "[CORRIGE - CHM + runtime]" + "[BUG confirme]").
+
+**Verification.** Convertir / semer sur un cercle ou une ellipse de reference :
+l'element ne doit plus tomber en "type non supporte".
+
+---
+
+## 2. [MOYEN] `Attachment.ReferenceOrigin` n'est pas une propriete
+
+**Constat.** `RechercheAltitude.TransformerPointVersMaitre` et
+`RechercheElement.TransformerPointVersRef` lisent `oAttachment.ReferenceOrigin`
+(en liaison tardive, `oAttachment As Object`).
+
+**Cause (confirmee CHM + DiagKB).** `ReferenceOrigin` n'existe **pas** comme
+propriete de `Attachment` : c'est un **parametre** de `Attachments.Add(...,
+MasterOrigin, ReferenceOrigin, ...)`. Le lire via `oAtt.ReferenceOrigin` rend
+**ERR 438** (vu dans DiagKB) -> le code retombe silencieusement sur `(0,0,0)`.
+`MasterOrigin`, lui, est une vraie propriete (Read-only Point3d, repond en late).
+
+**Consequence.** La translation ref -> master effective devient
+`master = MasterOrigin + source` (au lieu de `MasterOrigin + (source -
+ReferenceOrigin)`). C'est correct uniquement quand l'origine de reference vaut 0
+(references en coordonnees coincidentes avec le master, cas courant en topo).
+Si une reference est attachee avec un offset, les positions detectees et les
+elements crees sont **decales**.
+
+**Correctif : a INVESTIGUER avant de toucher** (ne pas casser le cas coincident
+qui fonctionne aujourd'hui).
+- Reproduire avec une reference attachee a un offset non nul (MasterOrigin != 0
+  et origine de reference != 0), verifier l'ampleur du decalage.
+- Piste API : passer par `Attachment.Transform` (`Transform3d`) pour convertir
+  ref -> master de facon exacte, plutot que la soustraction d'origines.
+- Tant que non investigue : laisser tel quel (fonctionne pour les refs
+  coincidentes) mais documenter la limite.
+
+**Reference KB.** Sections 8.2 ("[PIEGE - CHM] ReferenceOrigin...") et 8.4.
+
+---
+
+## 3. [BASSE] `bCreerTexte` : nom trompeur
+
+**Constat.** Dans `CSettings.cls`, `bCreerTexte` est commente "creer le texte
+altitude". En realite le texte est **toujours** cree (`CGraphique.CreerPointCote`) ;
+le booleen choisit seulement l'altitude du texte : **Z = 0.00** (vrai) ou **Z reel**
+(faux). La caption du formulaire dit deja la verite : "Texte a Z=0.00 (sinon Z reel)".
+
+**Correctif (cosmetique, sans changement de comportement).**
+- Renommer `bCreerTexte` -> `bTexteAZero` (ou `bTexteZZero`) dans `CSettings.cls`,
+  `CGraphique.cls`, les formulaires (`frmTrans3D`, `frmPoints`) et les etats.
+- A defaut de renommer : corriger le commentaire de declaration et les en-tetes
+  qui presentent encore "texte a Z=0.00" comme une **regle fixe** du cahier des
+  charges alors que c'est devenu une **option**.
+
+---
+
+## 4. [BASSE] Fichier parasite `frmTrans3D.log`
+
+**Constat.** `src/frmTrans3D.log` est versionne a cote des sources ; ce n'est pas
+un fichier de projet.
+
+**Correctif.** Le supprimer et l'ajouter au `.gitignore` (motif `*.log`).
+
+---
+
+## 5. [A VALIDER] `Attachment.Levels` en `For Each`
+
+**Constat.** `CGraphique.SyncNiveauxDepuisRef` fait `For Each oRefLvl In
+oAtt.Levels` (sous `On Error Resume Next`) pour recopier les niveaux d'une
+reference dans le fichier actif.
+
+**Statut.** Non confirme au runtime : l'appel est protege, mais on ne sait pas si
+le `For Each` renvoie effectivement les niveaux ou une collection vide. TODO
+ouvert de la KB (12.2).
+
+**Correctif.** Verifier au runtime (ajouter un compteur/log temporaire des
+niveaux recopies). Si la collection est vide, chercher l'API correcte via le CHM
+(`ref/MicroStationVBA_CHM/`) avant de recoder.
+
+**Reference KB.** Section 8.2 (note `Attachment.Levels`) et 12.2.
+
+---
+
+*Genere depuis l'analyse KB du 2026-07-21. Voir `KNOWLEDGE_BASE_MST_VBA.md`
+(dossier KB_Enrichie) pour le detail des pieges et de l'API.*
