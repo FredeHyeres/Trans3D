@@ -506,6 +506,104 @@ Function PentePctLongueur(ByVal dZ1 As Double, ByVal dZ2 As Double, _
 End Function
 
 '==============================================================================
+' Arc 3D par 3 points
+'
+' Calcule les parametres d'un arc circulaire passant par ptA (debut),
+' ptB (milieu) et ptC (fin) dans l'espace 3D. Renvoie False si les
+' trois points sont alignes.
+' La methode : plan defini par les 3 points, circumcentre dans ce plan,
+' rayon, matrice de rotation (RowX/RowY = plan, RowZ = normale),
+' angle de depart et balayage.
+'==============================================================================
+
+Function ArcDepuis3Points(ptA As Point3d, ptB As Point3d, ptC As Point3d, _
+                          ptCentre As Point3d, dRayon As Double, _
+                          oRot As Matrix3d, dDebut As Double, _
+                          dBalayage As Double) As Boolean
+    ArcDepuis3Points = False
+
+    ' Vecteurs AB et AC
+    Dim abx As Double, aby As Double, abz As Double
+    abx = ptB.X - ptA.X: aby = ptB.Y - ptA.Y: abz = ptB.Z - ptA.Z
+    Dim acx As Double, acy As Double, acz As Double
+    acx = ptC.X - ptA.X: acy = ptC.Y - ptA.Y: acz = ptC.Z - ptA.Z
+
+    ' Normale au plan (AB x AC)
+    Dim nx As Double, ny As Double, nz As Double
+    nx = aby * acz - abz * acy
+    ny = abz * acx - abx * acz
+    nz = abx * acy - aby * acx
+    Dim nLen As Double
+    nLen = Sqr(nx * nx + ny * ny + nz * nz)
+    If nLen < EPSILON Then Exit Function
+    nx = nx / nLen: ny = ny / nLen: nz = nz / nLen
+
+    ' Base orthonormee dans le plan : ex = AB/|AB|, ey = n x ex
+    Dim dAB As Double
+    dAB = Sqr(abx * abx + aby * aby + abz * abz)
+    If dAB < EPSILON Then Exit Function
+    Dim exx As Double, exy As Double, exz As Double
+    exx = abx / dAB: exy = aby / dAB: exz = abz / dAB
+
+    Dim eyx As Double, eyy As Double, eyz As Double
+    eyx = ny * exz - nz * exy
+    eyy = nz * exx - nx * exz
+    eyz = nx * exy - ny * exx
+
+    ' Projection de C dans le repere local (A = origine)
+    Dim a As Double, b As Double
+    a = acx * exx + acy * exy + acz * exz
+    b = acx * eyx + acy * eyy + acz * eyz
+    If Abs(b) < EPSILON Then Exit Function
+
+    ' Circumcentre en 2D (A=(0,0), B=(dAB,0), C=(a,b))
+    Dim cx As Double, cy As Double
+    cx = dAB / 2#
+    cy = (a * a + b * b - a * dAB) / (2# * b)
+
+    dRayon = Sqr(cx * cx + cy * cy)
+
+    ' Centre en 3D
+    ptCentre.X = ptA.X + cx * exx + cy * eyx
+    ptCentre.Y = ptA.Y + cx * exy + cy * eyy
+    ptCentre.Z = ptA.Z + cx * exz + cy * eyz
+
+    ' Matrice de rotation : colonnes = axes locaux (convention MicroStation)
+    ' Colonne 1 = ex, Colonne 2 = ey, Colonne 3 = n
+    oRot.RowX.X = exx: oRot.RowX.Y = eyx: oRot.RowX.Z = nx
+    oRot.RowY.X = exy: oRot.RowY.Y = eyy: oRot.RowY.Z = ny
+    oRot.RowZ.X = exz: oRot.RowZ.Y = eyz: oRot.RowZ.Z = nz
+
+    ' Angles dans le repere local depuis le centre
+    Dim angA As Double, angB As Double, angC As Double
+    angA = Atn2Priv(-cy, -cx)
+    angB = Atn2Priv(-cy, dAB - cx)
+    angC = Atn2Priv(b - cy, a - cx)
+
+    dDebut = angA
+
+    ' Angle relatif de B et C par rapport a A, ramene dans [0, 2*PI)
+    Dim dRelB As Double, dRelC As Double
+    dRelB = angB - angA
+    If dRelB < 0# Then dRelB = dRelB + 2# * PI
+    If dRelB >= 2# * PI Then dRelB = dRelB - 2# * PI
+
+    dRelC = angC - angA
+    If dRelC < 0# Then dRelC = dRelC + 2# * PI
+    If dRelC >= 2# * PI Then dRelC = dRelC - 2# * PI
+
+    ' Si B est entre A et C en sens trigo, balayage = +dRelC
+    ' Sinon inverser (sens horaire)
+    If dRelB > 0# And dRelB < dRelC Then
+        dBalayage = dRelC
+    Else
+        dBalayage = dRelC - 2# * PI
+    End If
+
+    ArcDepuis3Points = True
+End Function
+
+'==============================================================================
 ' Formatage
 '==============================================================================
 

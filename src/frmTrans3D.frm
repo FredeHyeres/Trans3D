@@ -75,7 +75,17 @@ Private WithEvents txtPas As MSForms.TextBox
 Attribute txtPas.VB_VarHelpID = -1
 Private WithEvents txtNombre As MSForms.TextBox
 Attribute txtNombre.VB_VarHelpID = -1
-' --- Convertir ---
+Private WithEvents optAuxSommets As MSForms.OptionButton
+Attribute optAuxSommets.VB_VarHelpID = -1
+Private WithEvents optZInterpole As MSForms.OptionButton
+Attribute optZInterpole.VB_VarHelpID = -1
+Private WithEvents optZDefini As MSForms.OptionButton
+Attribute optZDefini.VB_VarHelpID = -1
+' --- Convertir Cercle ---
+Private WithEvents optArcNatif As MSForms.OptionButton
+Attribute optArcNatif.VB_VarHelpID = -1
+Private WithEvents optPolyligne As MSForms.OptionButton
+Attribute optPolyligne.VB_VarHelpID = -1
 Private WithEvents txtDiscret As MSForms.TextBox
 Attribute txtDiscret.VB_VarHelpID = -1
 Private WithEvents chkSymboSource As MSForms.CheckBox
@@ -86,6 +96,7 @@ Attribute txtTolerance.VB_VarHelpID = -1
 ' --- Etat ---
 Private lblEtat1     As MSForms.Label   ' element selectionne (type, longueur)
 Private lblEtat2     As MSForms.Label   ' altitudes depart / arrivee
+Private lblEtat3     As MSForms.Label   ' liste Z sommets (etape 5)
 
 '==============================================================================
 ' Construction des controles
@@ -101,7 +112,7 @@ Private Sub ConstruireControles()
 
     Me.Caption = "Trans3D"
     Me.Width = 212
-    Me.Height = 514
+    Me.Height = 580
 
     Dim dY As Double
     dY = 6
@@ -194,7 +205,7 @@ Private Sub ConstruireControles()
     Set fraDecoupage = Me.Controls.Add("Forms.Frame.1", "fraDecoupage")
     fraDecoupage.Caption = "Decoupage"
     fraDecoupage.Left = 6: fraDecoupage.Top = dY
-    fraDecoupage.Width = 192: fraDecoupage.Height = 74
+    fraDecoupage.Width = 192: fraDecoupage.Height = 108
 
     Set chkDecoupage = fraDecoupage.Controls.Add("Forms.CheckBox.1", "chkDecoupage")
     chkDecoupage.Caption = "Creer des points intermediaires"
@@ -205,6 +216,7 @@ Private Sub ConstruireControles()
     optPasFixe.Caption = "Distance fixe (m)"
     optPasFixe.Left = 6: optPasFixe.Top = 28
     optPasFixe.Width = 110: optPasFixe.Height = 14
+    optPasFixe.GroupName = "ModeSemis"
 
     Set txtPas = fraDecoupage.Controls.Add("Forms.TextBox.1", "txtPas")
     txtPas.Left = 130: txtPas.Top = 27
@@ -214,31 +226,62 @@ Private Sub ConstruireControles()
     optPartsEgales.Caption = "Nombre de points"
     optPartsEgales.Left = 6: optPartsEgales.Top = 48
     optPartsEgales.Width = 110: optPartsEgales.Height = 14
+    optPartsEgales.GroupName = "ModeSemis"
 
     Set txtNombre = fraDecoupage.Controls.Add("Forms.TextBox.1", "txtNombre")
     txtNombre.Left = 130: txtNombre.Top = 47
     txtNombre.Width = 48: txtNombre.Height = 16
 
-    dY = dY + 80
+    Set optAuxSommets = fraDecoupage.Controls.Add("Forms.OptionButton.1", "optAuxSommets")
+    optAuxSommets.Caption = "Aux sommets"
+    optAuxSommets.Left = 6: optAuxSommets.Top = 68
+    optAuxSommets.Width = 90: optAuxSommets.Height = 14
+    optAuxSommets.GroupName = "ModeSemis"
 
-    ' --- Cadre Convertir ------------------------------------------------------
+    Set optZInterpole = fraDecoupage.Controls.Add("Forms.OptionButton.1", "optZInterpole")
+    optZInterpole.Caption = "Z interpole"
+    optZInterpole.Left = 24: optZInterpole.Top = 86
+    optZInterpole.Width = 76: optZInterpole.Height = 14
+    optZInterpole.GroupName = "ModeZSommet"
+
+    Set optZDefini = fraDecoupage.Controls.Add("Forms.OptionButton.1", "optZDefini")
+    optZDefini.Caption = "Z defini"
+    optZDefini.Left = 106: optZDefini.Top = 86
+    optZDefini.Width = 76: optZDefini.Height = 14
+    optZDefini.GroupName = "ModeZSommet"
+
+    dY = dY + 114
+
+    ' --- Cadre Convertir Cercle ------------------------------------------------
     Dim fraConv As MSForms.Frame
     Set fraConv = Me.Controls.Add("Forms.Frame.1", "fraConv")
-    fraConv.Caption = "Convertir"
+    fraConv.Caption = "Convertir Cercle"
     fraConv.Left = 6: fraConv.Top = dY
-    fraConv.Width = 192: fraConv.Height = 56
+    fraConv.Width = 192: fraConv.Height = 72
 
-    CreerLabel fraConv, "lblDiscret", "Pas discretisation :", 6, 12, 88
+    Set optArcNatif = fraConv.Controls.Add("Forms.OptionButton.1", "optArcNatif")
+    optArcNatif.Caption = "Arc 3D"
+    optArcNatif.Left = 6: optArcNatif.Top = 12
+    optArcNatif.Width = 60: optArcNatif.Height = 14
+    optArcNatif.GroupName = "ModeArc"
+
+    Set optPolyligne = fraConv.Controls.Add("Forms.OptionButton.1", "optPolyligne")
+    optPolyligne.Caption = "Polyligne"
+    optPolyligne.Left = 72: optPolyligne.Top = 12
+    optPolyligne.Width = 70: optPolyligne.Height = 14
+    optPolyligne.GroupName = "ModeArc"
+
+    CreerLabel fraConv, "lblDiscret", "Pas discretisation :", 6, 30, 88
     Set txtDiscret = fraConv.Controls.Add("Forms.TextBox.1", "txtDiscret")
-    txtDiscret.Left = 98: txtDiscret.Top = 10
+    txtDiscret.Left = 98: txtDiscret.Top = 28
     txtDiscret.Width = 48: txtDiscret.Height = 16
 
     Set chkSymboSource = fraConv.Controls.Add("Forms.CheckBox.1", "chkSymboSource")
     chkSymboSource.Caption = "Symbologie de l'element source"
-    chkSymboSource.Left = 6: chkSymboSource.Top = 32
+    chkSymboSource.Left = 6: chkSymboSource.Top = 50
     chkSymboSource.Width = 180: chkSymboSource.Height = 14
 
-    dY = dY + 62
+    dY = dY + 78
 
     ' --- Cadre Recherche ------------------------------------------------------
     Dim fraRech As MSForms.Frame
@@ -259,10 +302,11 @@ Private Sub ConstruireControles()
     Set fraEtat = Me.Controls.Add("Forms.Frame.1", "fraEtat")
     fraEtat.Caption = "Etat"
     fraEtat.Left = 6: fraEtat.Top = dY
-    fraEtat.Width = 192: fraEtat.Height = 54
+    fraEtat.Width = 192: fraEtat.Height = 70
 
     Set lblEtat1 = CreerLabel(fraEtat, "lblEtat1", "-", 6, 12, 180)
     Set lblEtat2 = CreerLabel(fraEtat, "lblEtat2", "-", 6, 28, 180)
+    Set lblEtat3 = CreerLabel(fraEtat, "lblEtat3", "", 6, 44, 180)
 End Sub
 
 '------------------------------------------------------------------------------
@@ -306,11 +350,16 @@ Sub Initialiser(oSettings As CSettings)
     chkDecoupage.Value = m_oSettings.bDecoupage
     optPasFixe.Value = (m_oSettings.oSemis.Mode = semisDistanceFixe)
     optPartsEgales.Value = (m_oSettings.oSemis.Mode = semisPartsEgales)
+    optAuxSommets.Value = (m_oSettings.oSemis.Mode = semisAuxSommets)
     txtPas.Text = Format$(m_oSettings.oSemis.Pas, "0.00")
     txtNombre.Text = CStr(m_oSettings.oSemis.Nombre)
+    optZInterpole.Value = Not m_oSettings.oSemis.bZDefini
+    optZDefini.Value = m_oSettings.oSemis.bZDefini
     ActiverChampsDecoupage
 
-    ' Convertir
+    ' Convertir Cercle
+    optArcNatif.Value = m_oSettings.bArcNatif
+    optPolyligne.Value = Not m_oSettings.bArcNatif
     txtDiscret.Text = Format$(m_oSettings.dPasDiscretisation, "0.00")
     chkSymboSource.Value = m_oSettings.bSymboSource
 
@@ -352,8 +401,13 @@ Private Sub ActiverChampsDecoupage()
     bActif = m_oSettings.bDecoupage
     optPasFixe.Enabled = bActif
     optPartsEgales.Enabled = bActif
+    optAuxSommets.Enabled = bActif
     txtPas.Enabled = bActif And (m_oSettings.oSemis.Mode = semisDistanceFixe)
     txtNombre.Enabled = bActif And (m_oSettings.oSemis.Mode = semisPartsEgales)
+    Dim bSommets As Boolean
+    bSommets = bActif And (m_oSettings.oSemis.Mode = semisAuxSommets)
+    optZInterpole.Enabled = bSommets
+    optZDefini.Enabled = bSommets
 End Sub
 
 '==============================================================================
@@ -375,11 +429,19 @@ Sub AfficherZ(sTexte As String)
 End Sub
 
 '------------------------------------------------------------------------------
+' Ligne 3 du cadre Etat : liste des Z sommets (etape 5 - Z defini).
+Sub AfficherSommets(sTexte As String)
+    If Not m_bConstruit Then Exit Sub
+    lblEtat3.Caption = sTexte
+End Sub
+
+'------------------------------------------------------------------------------
 ' Appele par les classes de commande au Reset (spec 5.9).
 Sub ReinitialiserEtat()
     If Not m_bConstruit Then Exit Sub
     lblEtat1.Caption = "-"
     lblEtat2.Caption = "-"
+    lblEtat3.Caption = ""
 End Sub
 
 '------------------------------------------------------------------------------
@@ -572,9 +634,40 @@ Private Sub txtNombre_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, _
         txtNombre.Text = CStr(m_oSettings.oSemis.Nombre)
 End Sub
 
+Private Sub optAuxSommets_Change()
+    If m_bInit Then Exit Sub
+    If m_oSettings Is Nothing Then Exit Sub
+    If optAuxSommets.Value = True Then m_oSettings.oSemis.Mode = semisAuxSommets
+    ActiverChampsDecoupage
+End Sub
+
+Private Sub optZInterpole_Change()
+    If m_bInit Then Exit Sub
+    If m_oSettings Is Nothing Then Exit Sub
+    If optZInterpole.Value = True Then m_oSettings.oSemis.bZDefini = False
+End Sub
+
+Private Sub optZDefini_Change()
+    If m_bInit Then Exit Sub
+    If m_oSettings Is Nothing Then Exit Sub
+    If optZDefini.Value = True Then m_oSettings.oSemis.bZDefini = True
+End Sub
+
 '==============================================================================
-' Evenements Convertir
+' Evenements Convertir Cercle
 '==============================================================================
+
+Private Sub optArcNatif_Change()
+    If m_bInit Then Exit Sub
+    If m_oSettings Is Nothing Then Exit Sub
+    If optArcNatif.Value = True Then m_oSettings.bArcNatif = True
+End Sub
+
+Private Sub optPolyligne_Change()
+    If m_bInit Then Exit Sub
+    If m_oSettings Is Nothing Then Exit Sub
+    If optPolyligne.Value = True Then m_oSettings.bArcNatif = False
+End Sub
 
 Private Sub txtDiscret_Change()
     If m_bInit Then Exit Sub

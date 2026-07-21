@@ -21,13 +21,15 @@ Attribute VB_Exposed = False
 '==============================================================================
 Option Explicit
 
-Public Mode         As eModeSemis    ' repartition : distance fixe / parts egales
+Public Mode         As eModeSemis    ' repartition : distance fixe / parts egales / aux sommets
 Public Pas          As Double        ' distance fixe entre points (u.m.)
 Public Nombre       As Long          ' nombre de points en parts egales
+Public bZDefini     As Boolean       ' aux sommets : True = Z clique, False = Z interpole
 
 '------------------------------------------------------------------------------
 Sub InitDefauts()
     Mode = semisDistanceFixe
     Pas = 0.5
     Nombre = 5
+    bZDefini = False
 End Sub

@@ -379,14 +379,12 @@ Function CreerArc3DZConstant(oArcSource As Element, ByVal dZ As Double, _
     TransformerPointVersMaitre oAttachment, ptC, ptCM
     ptCM.Z = dZ
 
-    ' Rayons repris tels quels : les coordonnees et dimensions scannees sont
-    ' deja compatibles master (le ScaleFactor est une echelle graphique,
-    ' cf. TransformerPointVersMaitre dans RechercheAltitude.bas)
     Dim oNouv As ArcElement
     Set oNouv = CreateArcElement2(Nothing, ptCM, _
                     oArc.PrimaryRadius, _
                     oArc.SecondaryRadius, _
-                    oArc.Rotation, oArc.StartAngle, oArc.SweepAngle)
+                    RotationAPlat(oArc.Rotation), _
+                    oArc.StartAngle, oArc.SweepAngle)
     AppliquerSymbologie oNouv, oArcSource, oSettings
     ActiveModelReference.AddElement oNouv
     Set CreerArc3DZConstant = oNouv
@@ -417,13 +415,36 @@ Function CreerCercle3DZConstant(oEllSource As Element, ByVal dZ As Double, _
     Dim oNouv As EllipseElement
     Set oNouv = CreateEllipseElement2(Nothing, ptCM, _
                     oEll.PrimaryRadius, _
-                    oEll.SecondaryRadius, oEll.Rotation)
+                    oEll.SecondaryRadius, _
+                    RotationAPlat(oEll.Rotation))
     AppliquerSymbologie oNouv, oEllSource, oSettings
     ActiveModelReference.AddElement oNouv
     Set CreerCercle3DZConstant = oNouv
     Exit Function
 Echec:
     Set CreerCercle3DZConstant = Nothing
+End Function
+
+'------------------------------------------------------------------------------
+' Arc 3D incline : cree depuis les parametres calcules par ArcDepuis3Points.
+' Renvoie Nothing en cas d'echec (l'appelant discretise en polyligne).
+Function CreerArc3DIncline(ptCentre As Point3d, ByVal dRayon As Double, _
+                           oRot As Matrix3d, ByVal dDebut As Double, _
+                           ByVal dBalayage As Double, _
+                           oElemSource As Element, _
+                           oSettings As CSettings) As Element
+    Set CreerArc3DIncline = Nothing
+    On Error GoTo Echec
+
+    Dim oNouv As ArcElement
+    Set oNouv = CreateArcElement2(Nothing, ptCentre, dRayon, dRayon, _
+                                  oRot, dDebut, dBalayage)
+    AppliquerSymbologie oNouv, oElemSource, oSettings
+    ActiveModelReference.AddElement oNouv
+    Set CreerArc3DIncline = oNouv
+    Exit Function
+Echec:
+    Set CreerArc3DIncline = Nothing
 End Function
 
 '==============================================================================
@@ -804,6 +825,30 @@ Private Function ResolverNiveau(sNiveau As String) As Level
     Err.Clear
     On Error GoTo 0
     If Not oLvl Is Nothing Then Set ResolverNiveau = oLvl
+End Function
+
+'------------------------------------------------------------------------------
+' Construit une matrice de rotation a plat (plan XY) a partir de l'orientation
+' de l'axe primaire de la source. Zerote toute composante Z : le resultat est
+' toujours horizontal. Necessaire car la Rotation d'un element 2D de reference
+' peut contenir du bruit Z qui incline le cercle/arc en 3D.
+Private Function RotationAPlat(oRotSrc As Matrix3d) As Matrix3d
+    Dim oR As Matrix3d
+    Dim dLen As Double
+    dLen = Sqr(oRotSrc.RowX.X * oRotSrc.RowX.X _
+             + oRotSrc.RowX.Y * oRotSrc.RowX.Y)
+    If dLen < 0.0001 Then
+        RotationAPlat = Matrix3dIdentity()
+        Exit Function
+    End If
+    oR.RowX.X = oRotSrc.RowX.X / dLen
+    oR.RowX.Y = oRotSrc.RowX.Y / dLen
+    oR.RowX.Z = 0#
+    oR.RowY.X = -oR.RowX.Y
+    oR.RowY.Y = oR.RowX.X
+    oR.RowY.Z = 0#
+    oR.RowZ.X = 0#: oR.RowZ.Y = 0#: oR.RowZ.Z = 1#
+    RotationAPlat = oR
 End Function
 
 '------------------------------------------------------------------------------

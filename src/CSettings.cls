@@ -37,6 +37,8 @@ Public bCreerCercle     As Boolean          ' Semer/Points : creer le cercle rep
 Public bSymboSource     As Boolean          ' Convertir : True = dupliquer la
                                             ' symbologie de l'element 2D source,
                                             ' False = attributs actifs
+Public bArcNatif        As Boolean          ' Convertir : True = arc 3D natif (incline),
+                                            ' False = polyligne discretisee
 Public bDecoupage       As Boolean          ' Convertir : creer des points intermediaires
 Public dPasDiscretisation As Double         ' Convertir : pas de discretisation
                                             ' des arcs/courbes/B-splines pentus (u.m.)
@@ -59,6 +61,7 @@ Sub Init()
     bTexteAZero = False
     bCreerCercle = True
     bSymboSource = True
+    bArcNatif = True
     bDecoupage = False
     dPasDiscretisation = 0.5
     dTolTexte = 1#

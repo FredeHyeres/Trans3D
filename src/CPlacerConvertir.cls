@@ -31,7 +31,7 @@ Option Explicit
 
 Implements IPrimitiveCommandEvents
 
-Private m_nEtape    As Integer      ' 1..4
+Private m_nEtape    As Integer      ' 1..5
 Private m_oElem     As Element      ' element 2D selectionne
 Private m_oAtt      As Object       ' attachement source (Nothing = modele actif)
 Private m_dX()      As Double       ' polyligne extraite (repere modele actif)
@@ -43,6 +43,8 @@ Private m_bFerme    As Boolean      ' cercle/ellipse complet : Z constant
 Private m_dSRef()   As Double       ' abscisses des altitudes de reference
 Private m_dZRef()   As Double       ' altitudes de reference
 Private m_nNbRef    As Long
+Private m_nSommetCourant As Long    ' etape 5 : indice du sommet en cours
+Private m_nNbSommets As Long        ' etape 5 : nombre total de sommets
 
 Private Sub IPrimitiveCommandEvents_Start()
     ShowCommand "Trans3D - Convertir"
@@ -103,6 +105,25 @@ Private Sub IPrimitiveCommandEvents_DataPoint(Point As Point3d, ByVal View As Vi
         ShowPrompt "Intermediaire " & (m_nNbRef - 2) & " : Z=" & _
                    FormatZ(dAltInt) & " a " & Format$(dAbs, "0.00") & _
                    " m  |  Data=autre cote  Reset=CREER l'element 3D"
+
+    Case 5
+        ' --- Z defini aux sommets : un clic par sommet ---
+        Dim dAltSom As Double, dSX As Double, dSY As Double
+        If Not LireCote(Point, (m_nSommetCourant = 0), dAltSom, dSX, dSY) Then Exit Sub
+
+        Dim nBase As Long
+        nBase = LBound(m_dS)
+        AjouterRef m_dS(nBase + m_nSommetCourant), dAltSom
+        m_nSommetCourant = m_nSommetCourant + 1
+        MettreAJourEtatSommets
+
+        If m_nSommetCourant = m_nNbSommets Then
+            CreerElement3DFinal
+        Else
+            ShowPrompt "Sommet " & (m_nSommetCourant + 1) & "/" & _
+                       m_nNbSommets & "  |  Data=cote du sommet" & _
+                       "  Reset=revenir au precedent"
+        End If
     End Select
 End Sub
 
@@ -119,8 +140,19 @@ Private Sub IPrimitiveCommandEvents_Dynamics(Point As Point3d, ByVal View As Vie
                                         g_oSettings.dTolTexte * 2
     End If
 
+    ' Repere visuel du sommet a renseigner (etape 5 : Z defini aux sommets)
+    If m_nEtape = 5 And m_nSommetCourant < m_nNbSommets Then
+        Dim nBaseDyn As Long
+        nBaseDyn = LBound(m_dX)
+        Dim ptSom As Point3d
+        ptSom.X = m_dX(nBaseDyn + m_nSommetCourant)
+        ptSom.Y = m_dY(nBaseDyn + m_nSommetCourant)
+        ptSom.Z = Point.Z
+        g_oMoteur.DessinCroix DrawMode, ptSom, g_oSettings.dTolTexte
+    End If
+
     ' Apercu de l'element 3D des que depart + fin sont connus
-    If m_nEtape = 4 And m_nNbRef >= 2 Then
+    If (m_nEtape = 4 Or m_nEtape = 5) And m_nNbRef >= 2 Then
         Dim dSRefTri() As Double, dZRefTri() As Double
         dSRefTri = m_dSRef: dZRefTri = m_dZRef
         g_oCalc.TrierRefsParAbscisse dSRefTri, dZRefTri, m_nNbRef
@@ -153,6 +185,18 @@ Private Sub IPrimitiveCommandEvents_Reset()
 
     Case 4
         CreerElement3DFinal
+
+    Case 5
+        If m_nSommetCourant = 0 Then
+            RetourSelection
+        Else
+            m_nSommetCourant = m_nSommetCourant - 1
+            m_nNbRef = m_nNbRef - 1
+            MettreAJourEtatSommets
+            ShowPrompt "Sommet " & (m_nSommetCourant + 1) & "/" & _
+                       m_nNbSommets & "  |  Data=cote du sommet" & _
+                       "  Reset=revenir au precedent"
+        End If
     End Select
 End Sub
 
@@ -207,11 +251,24 @@ Private Sub SelectionnerElement(Point As Point3d)
         ShowPrompt "Element ferme L=" & Format$(m_dLong, "0.00") & _
                    " m  |  Cliquez la cote d'altitude (Z constant)" & _
                    "  (Reset=autre element)"
+        m_nEtape = 2
+
+    ElseIf g_oSettings.bDecoupage _
+       And g_oSettings.oSemis.Mode = semisAuxSommets _
+       And g_oSettings.oSemis.bZDefini Then
+        m_nNbSommets = UBound(m_dX) - LBound(m_dX) + 1
+        m_nSommetCourant = 0
+        frmTrans3D.AfficherElement g_oMoteur.NomType(m_oElem) & "   L=" & _
+                                   Format$(m_dLong, "0.00") & " m   " & _
+                                   m_nNbSommets & " sommets"
+        ShowPrompt "Sommet 1/" & m_nNbSommets & _
+                   "  |  Cliquez la cote d'altitude  (Reset=autre element)"
+        m_nEtape = 5
     Else
         ShowPrompt "Element L=" & Format$(m_dLong, "0.00") & _
                    " m  |  Cliquez la cote de DEPART  (Reset=autre element)"
+        m_nEtape = 2
     End If
-    m_nEtape = 2
 End Sub
 
 '------------------------------------------------------------------------------
@@ -235,6 +292,16 @@ Private Sub CreerElement3DFinal()
         End If
     Next
 
+    ' Calcul du Z interpole pour chaque sommet de la polyligne 2D
+    ' (necessaire pour le decoupage meme si l'element cree est un arc natif)
+    Dim dZ() As Double
+    If Not bZConst Then
+        If m_nNbRef > 2 Then
+            g_oCalc.InsererAbscisses m_dX, m_dY, m_dS, m_dSRef, m_nNbRef
+        End If
+        g_oCalc.CalculerZPolyligne m_dS, m_dSRef, m_dZRef, m_nNbRef, dZ
+    End If
+
     ' Type natif conserve si possible (arc/cercle a Z constant)
     Dim oNouv As Element
     Set oNouv = Nothing
@@ -249,13 +316,39 @@ Private Sub CreerElement3DFinal()
         End Select
     End If
 
+    ' Arc 3D incline (Z non constant, methode 3 points : debut, milieu, fin)
+    If oNouv Is Nothing And Not bZConst _
+       And m_oElem.Type = msdElementTypeArc _
+       And g_oSettings.bArcNatif Then
+        Dim ptArcDep As Point3d, ptArcMil As Point3d, ptArcFin As Point3d
+        g_oCalc.PointSurPolyligne2D m_dX, m_dY, m_dS, 0#, _
+                                     ptArcDep.X, ptArcDep.Y
+        ptArcDep.Z = m_dZRef(0)
+        g_oCalc.PointSurPolyligne2D m_dX, m_dY, m_dS, m_dLong / 2#, _
+                                     ptArcMil.X, ptArcMil.Y
+        ptArcMil.Z = g_oCalc.InterpolerZTroncons(m_dSRef, m_dZRef, _
+                                                   m_nNbRef, m_dLong / 2#)
+        g_oCalc.PointSurPolyligne2D m_dX, m_dY, m_dS, m_dLong, _
+                                     ptArcFin.X, ptArcFin.Y
+        ptArcFin.Z = m_dZRef(m_nNbRef - 1)
+
+        Dim ptCArc As Point3d, dRArc As Double
+        Dim oRotArc As Matrix3d, dDebArc As Double, dBalArc As Double
+        If g_oCalc.ArcDepuis3Points(ptArcDep, ptArcMil, ptArcFin, _
+                ptCArc, dRArc, oRotArc, dDebArc, dBalArc) Then
+            Set oNouv = g_oMoteur.CreerArc3DIncline(ptCArc, dRArc, _
+                            oRotArc, dDebArc, dBalArc, m_oElem, g_oSettings)
+        End If
+    End If
+
     ' Sinon : polyligne 3D, avec un sommet a chaque altitude intermediaire
     If oNouv Is Nothing Then
-        If m_nNbRef > 2 Then
-            g_oCalc.InsererAbscisses m_dX, m_dY, m_dS, m_dSRef, m_nNbRef
+        If bZConst Then
+            If m_nNbRef > 2 Then
+                g_oCalc.InsererAbscisses m_dX, m_dY, m_dS, m_dSRef, m_nNbRef
+            End If
+            g_oCalc.CalculerZPolyligne m_dS, m_dSRef, m_dZRef, m_nNbRef, dZ
         End If
-        Dim dZ() As Double
-        g_oCalc.CalculerZPolyligne m_dS, m_dSRef, m_dZRef, m_nNbRef, dZ
         Set oNouv = g_oMoteur.CreerPolyligne3D(m_dX, m_dY, dZ, m_oElem, _
                                                g_oSettings)
     End If
@@ -275,35 +368,48 @@ Private Sub CreerElement3DFinal()
 
     ' Decoupage : points intermediaires le long de l'element
     If g_oSettings.bDecoupage And Not m_bFerme Then
-        Dim dS3D() As Double, dZ3D() As Double
-        ReDim dZ3D(nDep To nFin)
-        If bZConst Then
-            Dim k As Long
-            For k = nDep To nFin: dZ3D(k) = m_dZRef(0): Next
+        If g_oSettings.oSemis.Mode = semisAuxSommets Then
+            ' Points cotes a chaque sommet intermediaire de la polyligne
+            Dim iV As Long
+            For iV = nDep + 1 To nFin - 1
+                Dim dZV As Double
+                If bZConst Then dZV = m_dZRef(0) Else dZV = dZ(iV)
+                Err.Clear
+                g_oMoteur.CreerPointCote m_dX(iV), m_dY(iV), dZV, _
+                                         g_oSettings, g_oCalc
+                Err.Clear
+            Next
         Else
-            Dim j As Long
-            For j = nDep To nFin: dZ3D(j) = dZ(j): Next
-        End If
-        Dim dLong3D As Double
-        dLong3D = g_oCalc.AbscissesPolyligne3D(m_dX, m_dY, dZ3D, dS3D)
+            Dim dS3D() As Double, dZ3D() As Double
+            ReDim dZ3D(nDep To nFin)
+            If bZConst Then
+                Dim k As Long
+                For k = nDep To nFin: dZ3D(k) = m_dZRef(0): Next
+            Else
+                Dim j As Long
+                For j = nDep To nFin: dZ3D(j) = dZ(j): Next
+            End If
+            Dim dLong3D As Double
+            dLong3D = g_oCalc.AbscissesPolyligne3D(m_dX, m_dY, dZ3D, dS3D)
 
-        Dim dSemis() As Double, nNbSemis As Long
-        If g_oSettings.oSemis.Mode = semisPartsEgales Then
-            nNbSemis = g_oCalc.AbscissesSemisPartsEgales(dLong3D, _
-                           g_oSettings.oSemis.Nombre + 2, dSemis)
-        Else
-            nNbSemis = g_oCalc.AbscissesSemisPasFixe(dLong3D, _
-                           g_oSettings.oSemis.Pas, dSemis)
-        End If
+            Dim dSemis() As Double, nNbSemis As Long
+            If g_oSettings.oSemis.Mode = semisPartsEgales Then
+                nNbSemis = g_oCalc.AbscissesSemisPartsEgales(dLong3D, _
+                               g_oSettings.oSemis.Nombre + 2, dSemis)
+            Else
+                nNbSemis = g_oCalc.AbscissesSemisPasFixe(dLong3D, _
+                               g_oSettings.oSemis.Pas, dSemis)
+            End If
 
-        Dim iSe As Long
-        Dim dPX As Double, dPY As Double, dPZ As Double
-        For iSe = 1 To nNbSemis - 2
-            g_oCalc.PointSurPolyligne3D m_dX, m_dY, dZ3D, dS3D, dSemis(iSe), dPX, dPY, dPZ
-            Err.Clear
-            g_oMoteur.CreerPointCote dPX, dPY, dPZ, g_oSettings, g_oCalc
-            Err.Clear
-        Next
+            Dim iSe As Long
+            Dim dPX As Double, dPY As Double, dPZ As Double
+            For iSe = 1 To nNbSemis - 2
+                g_oCalc.PointSurPolyligne3D m_dX, m_dY, dZ3D, dS3D, dSemis(iSe), dPX, dPY, dPZ
+                Err.Clear
+                g_oMoteur.CreerPointCote dPX, dPY, dPZ, g_oSettings, g_oCalc
+                Err.Clear
+            Next
+        End If
     End If
     On Error GoTo 0
 
@@ -321,6 +427,19 @@ Private Sub CreerElement3DFinal()
 
     RetourSelection
     frmTrans3D.AfficherElement sBilan
+End Sub
+
+'------------------------------------------------------------------------------
+' Mise a jour du cadre Etat pour l'etape 5 (Z defini aux sommets).
+Private Sub MettreAJourEtatSommets()
+    frmTrans3D.AfficherZ "Sommet " & m_nSommetCourant & "/" & m_nNbSommets
+
+    Dim sListe As String, iR As Long
+    For iR = 0 To m_nNbRef - 1
+        If iR > 0 Then sListe = sListe & " | "
+        sListe = sListe & FormatZ(m_dZRef(iR))
+    Next
+    frmTrans3D.AfficherSommets sListe
 End Sub
 
 '==============================================================================

@@ -29,6 +29,7 @@ Option Explicit
 Public Enum eModeSemis
     semisDistanceFixe = 0
     semisPartsEgales = 1
+    semisAuxSommets = 2
 End Enum
 
 ' --- Instances partagees entre les classes de commande ---
