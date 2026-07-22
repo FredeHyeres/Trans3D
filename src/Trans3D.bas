@@ -110,8 +110,15 @@ End Function
 '------------------------------------------------------------------------------
 ' Instanciation unique des objets partages par les classes de commande.
 Public Sub InitialiserContexte()
-    Set g_oSettings = New CSettings
-    g_oSettings.Init
+    If g_oSettings Is Nothing Then
+        Set g_oSettings = New CSettings
+        g_oSettings.Init
+    End If
+
+    ' Modeles transitoires : reinitialiser (references invalides si fichier change)
+    Set g_oSettings.oTextModele = Nothing
+    Set g_oSettings.oTagModele = Nothing
+    g_oSettings.dModeleHauteur = 0#
 
     Set g_oCalc = New CCalcul
     Set g_oMoteur = New CGraphique

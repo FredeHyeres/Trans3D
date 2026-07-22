@@ -143,6 +143,7 @@ Private Sub IPrimitiveCommandEvents_Reset()
 End Sub
 
 Private Sub IPrimitiveCommandEvents_Cleanup()
+    frmPoints.Hide
 End Sub
 
 '------------------------------------------------------------------------------

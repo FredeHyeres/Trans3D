@@ -334,6 +334,7 @@ Sub Initialiser(oSettings As CSettings)
     txtHauteur.Text = Format$(m_oSettings.oTexte.Hauteur, "0.00")
     txtCouleurTexte.Text = CStr(m_oSettings.oTexte.Couleur)
     RemplirNiveaux cmbNiveauTexte
+    PositionnerNiveau cmbNiveauTexte, m_oSettings.oTexte.NomNiveau
     txtPolice.Text = m_oSettings.oTexte.NomPolice
     chkFond.Value = m_oSettings.oTexte.FondActif
     txtDecimales.Text = CStr(m_oSettings.oTexte.Decimales)
@@ -345,6 +346,7 @@ Sub Initialiser(oSettings As CSettings)
     txtDiametre.Text = Format$(m_oSettings.oCercle.Diametre, "0.00")
     txtCouleurCercle.Text = CStr(m_oSettings.oCercle.Couleur)
     RemplirNiveaux cmbNiveauCercle
+    PositionnerNiveau cmbNiveauCercle, m_oSettings.oCercle.NomNiveau
 
     ' Decoupage
     chkDecoupage.Value = m_oSettings.bDecoupage
@@ -709,6 +711,18 @@ End Sub
 
 '------------------------------------------------------------------------------
 ' Extrait le nom du niveau d'un item "numero : nom" de combo.
+Private Sub PositionnerNiveau(cmb As MSForms.ComboBox, sNom As String)
+    If Len(sNom) = 0 Then cmb.ListIndex = 0: Exit Sub
+    Dim i As Long
+    For i = 0 To cmb.ListCount - 1
+        If ExtraireNiveau(cmb.List(i)) = sNom Then
+            cmb.ListIndex = i
+            Exit Sub
+        End If
+    Next
+    cmb.ListIndex = 0
+End Sub
+
 Private Function ExtraireNiveau(ByVal sItem As String) As String
     sItem = Trim$(sItem)
     If InStr(sItem, " : ") > 0 Then
