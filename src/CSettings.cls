@@ -30,6 +30,7 @@ Option Explicit
 Public oTexte           As CSymboTexte      ' symbologie et format du texte
 Public oCercle          As CSymboCercle     ' symbologie du cercle repere
 Public oSemis           As CParamSemis      ' repartition des points semes
+Public oElements        As CSymboElements   ' symbologie des elements 3D (Convertir)
 
 Public bTexteAZero      As Boolean          ' Semer/Points : texte a Z=0.00 (sinon Z reel)
 Public bCreerCercle     As Boolean          ' Semer/Points : creer le cercle repere
@@ -57,6 +58,8 @@ Sub Init()
     oCercle.InitDefauts
     Set oSemis = New CParamSemis
     oSemis.InitDefauts
+    Set oElements = New CSymboElements
+    oElements.InitDefauts
 
     bTexteAZero = False
     bCreerCercle = True

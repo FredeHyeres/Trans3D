@@ -19,8 +19,7 @@ Attribute VB_Exposed = False
 ' Cadres :
 '   Cercle repere  : creer oui/non, diametre, couleur, niveau
 '   Texte altitude : creer oui/non, duplication du style de la cote source ou
-'                    creation (hauteur, couleur, niveau, police, fond),
-'                    decimales et separateur
+'                    creation (niveau, style de texte), decimales
 '   Recherche      : tolerance de clic (u.m.)
 '   Etat           : information de la commande en cours
 '
@@ -49,20 +48,12 @@ Private WithEvents chkCreerTexte As MSForms.CheckBox
 Attribute chkCreerTexte.VB_VarHelpID = -1
 Private WithEvents chkTexteModele As MSForms.CheckBox
 Attribute chkTexteModele.VB_VarHelpID = -1
-Private WithEvents txtHauteur As MSForms.TextBox
-Attribute txtHauteur.VB_VarHelpID = -1
-Private WithEvents txtCouleurTexte As MSForms.TextBox
-Attribute txtCouleurTexte.VB_VarHelpID = -1
 Private WithEvents cmbNiveauTexte As MSForms.ComboBox
 Attribute cmbNiveauTexte.VB_VarHelpID = -1
-Private WithEvents txtPolice As MSForms.TextBox
-Attribute txtPolice.VB_VarHelpID = -1
-Private WithEvents chkFond As MSForms.CheckBox
-Attribute chkFond.VB_VarHelpID = -1
+Private WithEvents cmbStyleTexte As MSForms.ComboBox
+Attribute cmbStyleTexte.VB_VarHelpID = -1
 Private WithEvents txtDecimales As MSForms.TextBox
 Attribute txtDecimales.VB_VarHelpID = -1
-Private WithEvents chkVirgule As MSForms.CheckBox
-Attribute chkVirgule.VB_VarHelpID = -1
 ' --- Recherche ---
 Private WithEvents txtTolerance As MSForms.TextBox
 Attribute txtTolerance.VB_VarHelpID = -1
@@ -127,7 +118,7 @@ Private Sub ConstruireControles()
     Set fraTexte = Me.Controls.Add("Forms.Frame.1", "fraTexte")
     fraTexte.Caption = "Texte altitude"
     fraTexte.Left = 6: fraTexte.Top = dY
-    fraTexte.Width = 192: fraTexte.Height = 122
+    fraTexte.Width = 192: fraTexte.Height = 104
 
     Set chkCreerTexte = fraTexte.Controls.Add("Forms.CheckBox.1", "chkCreerTexte")
     chkCreerTexte.Caption = "Texte a Z=0.00 (sinon Z reel)"
@@ -139,42 +130,22 @@ Private Sub ConstruireControles()
     chkTexteModele.Left = 6: chkTexteModele.Top = 26
     chkTexteModele.Width = 180: chkTexteModele.Height = 14
 
-    CreerLabel fraTexte, "lblHaut", "Hauteur :", 6, 46, 44
-    Set txtHauteur = fraTexte.Controls.Add("Forms.TextBox.1", "txtHauteur")
-    txtHauteur.Left = 52: txtHauteur.Top = 44
-    txtHauteur.Width = 36: txtHauteur.Height = 16
-
-    CreerLabel fraTexte, "lblCoulTxt", "Coul. :", 96, 46, 30
-    Set txtCouleurTexte = fraTexte.Controls.Add("Forms.TextBox.1", "txtCouleurTexte")
-    txtCouleurTexte.Left = 128: txtCouleurTexte.Top = 44
-    txtCouleurTexte.Width = 28: txtCouleurTexte.Height = 16
-
-    CreerLabel fraTexte, "lblNivTxt", "Niveau :", 6, 64, 40
+    CreerLabel fraTexte, "lblNivTxt", "Niveau :", 6, 46, 40
     Set cmbNiveauTexte = fraTexte.Controls.Add("Forms.ComboBox.1", "cmbNiveauTexte")
-    cmbNiveauTexte.Left = 52: cmbNiveauTexte.Top = 62
+    cmbNiveauTexte.Left = 52: cmbNiveauTexte.Top = 44
     cmbNiveauTexte.Width = 134: cmbNiveauTexte.Height = 16
 
-    CreerLabel fraTexte, "lblPolice", "Police :", 6, 82, 40
-    Set txtPolice = fraTexte.Controls.Add("Forms.TextBox.1", "txtPolice")
-    txtPolice.Left = 52: txtPolice.Top = 80
-    txtPolice.Width = 60: txtPolice.Height = 16
+    CreerLabel fraTexte, "lblStyleTxt", "Style :", 6, 66, 40
+    Set cmbStyleTexte = fraTexte.Controls.Add("Forms.ComboBox.1", "cmbStyleTexte")
+    cmbStyleTexte.Left = 52: cmbStyleTexte.Top = 64
+    cmbStyleTexte.Width = 134: cmbStyleTexte.Height = 16
 
-    Set chkFond = fraTexte.Controls.Add("Forms.CheckBox.1", "chkFond")
-    chkFond.Caption = "Fond"
-    chkFond.Left = 120: chkFond.Top = 81
-    chkFond.Width = 60: chkFond.Height = 14
-
-    CreerLabel fraTexte, "lblDec", "Decimales :", 6, 102, 52
+    CreerLabel fraTexte, "lblDec", "Decimales :", 6, 86, 52
     Set txtDecimales = fraTexte.Controls.Add("Forms.TextBox.1", "txtDecimales")
-    txtDecimales.Left = 60: txtDecimales.Top = 100
+    txtDecimales.Left = 60: txtDecimales.Top = 84
     txtDecimales.Width = 24: txtDecimales.Height = 16
 
-    Set chkVirgule = fraTexte.Controls.Add("Forms.CheckBox.1", "chkVirgule")
-    chkVirgule.Caption = "Virgule (12,35)"
-    chkVirgule.Left = 96: chkVirgule.Top = 101
-    chkVirgule.Width = 90: chkVirgule.Height = 14
-
-    dY = dY + 128
+    dY = dY + 110
 
     ' --- Cadre Recherche ------------------------------------------------------
     Dim fraRech As MSForms.Frame
@@ -248,14 +219,11 @@ Sub Initialiser(oSettings As CSettings)
     ' Texte altitude
     chkCreerTexte.Value = m_oSettings.bTexteAZero
     chkTexteModele.Value = m_oSettings.oTexte.CommeModele
-    txtHauteur.Text = Format$(m_oSettings.oTexte.Hauteur, "0.00")
-    txtCouleurTexte.Text = CStr(m_oSettings.oTexte.Couleur)
     RemplirNiveaux cmbNiveauTexte
     PositionnerNiveau cmbNiveauTexte, m_oSettings.oTexte.NomNiveau
-    txtPolice.Text = m_oSettings.oTexte.NomPolice
-    chkFond.Value = m_oSettings.oTexte.FondActif
+    RemplirStyles cmbStyleTexte
+    PositionnerStyle cmbStyleTexte, m_oSettings.oTexte.NomStyleTexte
     txtDecimales.Text = CStr(m_oSettings.oTexte.Decimales)
-    chkVirgule.Value = (m_oSettings.oTexte.SepDecimal = ",")
     ActiverChampsTexte
 
     ' Recherche
@@ -279,14 +247,38 @@ Private Sub RemplirNiveaux(cmb As MSForms.ComboBox)
 End Sub
 
 '------------------------------------------------------------------------------
+Private Sub RemplirStyles(cmb As MSForms.ComboBox)
+    cmb.Clear
+    cmb.AddItem ""
+    On Error Resume Next
+    Dim oStyle As TextStyle
+    For Each oStyle In ActiveDesignFile.TextStyles
+        cmb.AddItem oStyle.Name
+    Next
+    On Error GoTo 0
+    cmb.ListIndex = 0
+End Sub
+
+'------------------------------------------------------------------------------
+Private Sub PositionnerStyle(cmb As MSForms.ComboBox, sNom As String)
+    If Len(sNom) = 0 Then cmb.ListIndex = 0: Exit Sub
+    Dim i As Long
+    For i = 0 To cmb.ListCount - 1
+        If cmb.List(i) = sNom Then
+            cmb.ListIndex = i
+            Exit Sub
+        End If
+    Next
+    cmb.ListIndex = 0
+End Sub
+
+'------------------------------------------------------------------------------
+' Le niveau et le style ne sont saisissables qu'en mode creation.
 Private Sub ActiverChampsTexte()
     Dim bLibre As Boolean
     bLibre = Not m_oSettings.oTexte.CommeModele
-    txtHauteur.Enabled = bLibre
-    txtCouleurTexte.Enabled = bLibre
     cmbNiveauTexte.Enabled = bLibre
-    txtPolice.Enabled = bLibre
-    chkFond.Enabled = bLibre
+    cmbStyleTexte.Enabled = bLibre
 End Sub
 
 '==============================================================================
@@ -343,10 +335,8 @@ End Sub
 Sub RafraichirTexte()
     If m_oSettings Is Nothing Then Exit Sub
     m_bInit = True
-    txtCouleurTexte.Text = CStr(m_oSettings.oTexte.Couleur)
     cmbNiveauTexte.Text = m_oSettings.oTexte.NomNiveau
     txtDecimales.Text = CStr(m_oSettings.oTexte.Decimales)
-    chkVirgule.Value = (m_oSettings.oTexte.SepDecimal = ",")
     m_bInit = False
 End Sub
 
@@ -410,45 +400,16 @@ Private Sub chkTexteModele_Change()
     End If
 End Sub
 
-Private Sub txtHauteur_Change()
-    If m_bInit Then Exit Sub
-    If m_oSettings Is Nothing Then Exit Sub
-    Dim dH As Double
-    dH = Val(Replace(Trim$(txtHauteur.Text), ",", "."))
-    If dH > 0 Then m_oSettings.oTexte.Hauteur = dH
-End Sub
-
-Private Sub txtHauteur_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, _
-                               ByVal Shift As Integer)
-    If KeyCode = vbKeyReturn And Not m_oSettings Is Nothing Then _
-        txtHauteur.Text = Format$(m_oSettings.oTexte.Hauteur, "0.00")
-End Sub
-
-Private Sub txtCouleurTexte_Change()
-    If m_bInit Then Exit Sub
-    If m_oSettings Is Nothing Then Exit Sub
-    Dim sVal As String: sVal = Trim$(txtCouleurTexte.Text)
-    If sVal = "" Then Exit Sub
-    Dim nCoul As Long: nCoul = CLng(Val(sVal))
-    If nCoul >= 0 And nCoul <= 255 Then m_oSettings.oTexte.Couleur = nCoul
-End Sub
-
 Private Sub cmbNiveauTexte_Change()
     If m_bInit Then Exit Sub
     If m_oSettings Is Nothing Then Exit Sub
     m_oSettings.oTexte.NomNiveau = ExtraireNiveau(cmbNiveauTexte.Text)
 End Sub
 
-Private Sub txtPolice_Change()
+Private Sub cmbStyleTexte_Change()
     If m_bInit Then Exit Sub
     If m_oSettings Is Nothing Then Exit Sub
-    m_oSettings.oTexte.NomPolice = Trim$(txtPolice.Text)
-End Sub
-
-Private Sub chkFond_Change()
-    If m_bInit Then Exit Sub
-    If m_oSettings Is Nothing Then Exit Sub
-    m_oSettings.oTexte.FondActif = (chkFond.Value = True)
+    m_oSettings.oTexte.NomStyleTexte = Trim$(cmbStyleTexte.Text)
 End Sub
 
 Private Sub txtDecimales_Change()
@@ -463,16 +424,6 @@ Private Sub txtDecimales_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, _
                                  ByVal Shift As Integer)
     If KeyCode = vbKeyReturn And Not m_oSettings Is Nothing Then _
         txtDecimales.Text = CStr(m_oSettings.oTexte.Decimales)
-End Sub
-
-Private Sub chkVirgule_Change()
-    If m_bInit Then Exit Sub
-    If m_oSettings Is Nothing Then Exit Sub
-    If chkVirgule.Value = True Then
-        m_oSettings.oTexte.SepDecimal = ","
-    Else
-        m_oSettings.oTexte.SepDecimal = "."
-    End If
 End Sub
 
 '==============================================================================

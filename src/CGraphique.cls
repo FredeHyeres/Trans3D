@@ -67,12 +67,20 @@ Sub SynchroniserRessourcesReferences()
 End Sub
 
 '------------------------------------------------------------------------------
+' PIEGE : AddNewLevel seul ne suffit pas -- sans Levels.Rewrite, le niveau cree
+' est perdu a la fermeture du fichier (element ensuite oriente vers un niveau
+' inexistant a la reouverture). Copie aussi la couleur/epaisseur par niveau
+' (ElementColor/ElementLineWeight) pour que le niveau nouvellement cree
+' affiche la meme symbologie ByLevel que celui de la reference.
 Private Sub SyncNiveauxDepuisRef(oAtt As Object)
     On Error Resume Next
     Dim oLevels As Object
     Set oLevels = oAtt.DesignFile.Levels
     If oLevels Is Nothing Then Exit Sub
     If Err.Number <> 0 Then Err.Clear: Exit Sub
+
+    Dim bModifie As Boolean
+    bModifie = False
 
     Dim oRefLvl As Level
     For Each oRefLvl In oLevels
@@ -86,12 +94,23 @@ Private Sub SyncNiveauxDepuisRef(oAtt As Object)
         Set oExist = ActiveDesignFile.Levels(sNom)
         If oExist Is Nothing Then
             Err.Clear
-            ActiveDesignFile.AddNewLevel sNom
+            Dim oNouv As Level
+            Set oNouv = ActiveDesignFile.AddNewLevel(sNom)
+            If Not oNouv Is Nothing Then
+                oNouv.ElementColor = oRefLvl.ElementColor: Err.Clear
+                oNouv.ElementLineWeight = oRefLvl.ElementLineWeight: Err.Clear
+                bModifie = True
+            End If
             Err.Clear
         End If
 SuivantNiveau:
         Err.Clear
     Next
+
+    If bModifie Then
+        ActiveDesignFile.Levels.Rewrite
+        Err.Clear
+    End If
     On Error GoTo 0
 End Sub
 
@@ -687,30 +706,13 @@ Private Function ConstruireTexteAltitude(ptTexte As Point3d, _
     If oTxt Is Nothing Then Exit Function
 
     If bSansModele Or Not oSettings.oTexte.CommeModele Then
-        ' Mode creation : appliquer les parametres du formulaire
+        ' Mode creation : appliquer le style de texte choisi dans le formulaire
         On Error Resume Next
-        Dim oTS As TextStyle
-        Set oTS = oTxt.TextStyle
-        If oSettings.oTexte.Hauteur > 0 Then oTS.Height = oSettings.oTexte.Hauteur
-        If oSettings.oTexte.Largeur > 0 Then
-            oTS.Width = oSettings.oTexte.Largeur
-        ElseIf oSettings.oTexte.Hauteur > 0 Then
-            oTS.Width = oSettings.oTexte.Hauteur
+        Dim oStyleLocal As TextStyle
+        If Len(oSettings.oTexte.NomStyleTexte) > 0 Then
+            Set oStyleLocal = ActiveDesignFile.TextStyles(oSettings.oTexte.NomStyleTexte)
+            If Not oStyleLocal Is Nothing Then oTxt.TextStyle = oStyleLocal
         End If
-        If Len(oSettings.oTexte.NomPolice) > 0 Then
-            Dim oFont As Object
-            Set oFont = FindFont(oSettings.oTexte.NomPolice)
-            If Not oFont Is Nothing Then Set oTS.Font = oFont
-            Err.Clear
-        End If
-        If oSettings.oTexte.FondActif Then
-            Dim oTSObj As Object
-            Set oTSObj = oTS
-            oTSObj.Background = True
-            Err.Clear
-        End If
-        oTxt.TextStyle = oTS
-        oTxt.Color = oSettings.oTexte.Couleur
         Set oTxt.Level = ResolverNiveau(oSettings.oTexte.NomNiveau)
         Err.Clear
         On Error GoTo 0
@@ -721,7 +723,6 @@ Private Function ConstruireTexteAltitude(ptTexte As Point3d, _
         Dim sStyleNom As String
         sStyleNom = oSettings.oTextModele.TextStyle.Name
         If Err.Number = 0 And Len(sStyleNom) > 0 Then
-            Dim oStyleLocal As TextStyle
             Set oStyleLocal = ActiveDesignFile.TextStyles(sStyleNom)
             If Not oStyleLocal Is Nothing Then
                 oTxt.TextStyle = oStyleLocal
@@ -737,46 +738,50 @@ Private Function ConstruireTexteAltitude(ptTexte As Point3d, _
 End Function
 
 '------------------------------------------------------------------------------
-' Cherche une police par nom. Tout en liaison tardive : l'emplacement exact de
-' la collection des polices varie selon les versions (a valider sur poste).
-Private Function FindFont(sNom As String) As Object
-    Set FindFont = Nothing
-    On Error Resume Next
-    Dim oApp As Object
-    Set oApp = Application
-    Dim oFonts As Object
-    Set oFonts = oApp.ActiveDesignFile.Fonts
-    If oFonts Is Nothing Then
-        Err.Clear
-        Set oFonts = oApp.Fonts
-    End If
-    If Not oFonts Is Nothing Then
-        Set FindFont = oFonts.Item(sNom)
-    End If
-    Err.Clear
-    On Error GoTo 0
-End Function
-
-'------------------------------------------------------------------------------
-' Applique niveau/couleur/style/epaisseur de l'element source (mode
-' bSymboSource), le niveau etant cree dans le fichier actif s'il n'existe
-' pas. Si bSymboSource est faux ou la source Nothing : attributs actifs
-' (rien a faire, CreateXxx sans modele les applique deja).
+' Applique la symbologie de l'element cree (ligne/arc/ellipse de Convertir).
+' Trois modes (CSettings.bSymboSource, CSymboElements.bActifs) :
+'   bSymboSource = True (et source presente) : duplique niveau/couleur/style/
+'     epaisseur de l'element 2D source (le niveau etant cree dans le fichier
+'     actif s'il n'existe pas).
+'   bSymboSource = False, oElements.bActifs = True (defaut) : attributs actifs
+'     (rien a faire, CreateXxx sans modele les applique deja).
+'   bSymboSource = False, oElements.bActifs = False : niveau/couleur/style de
+'     ligne/epaisseur choisis explicitement dans le formulaire.
 Private Sub AppliquerSymbologie(oDst As Element, oSrc As Element, _
                                 oSettings As CSettings)
-    If oSrc Is Nothing Then Exit Sub
-    If Not oSettings.bSymboSource Then Exit Sub
+    If oSettings.bSymboSource And Not oSrc Is Nothing Then
+        On Error Resume Next
+        oDst.Color = oSrc.Color: Err.Clear
+        oDst.LineWeight = oSrc.LineWeight: Err.Clear
+        Set oDst.LineStyle = oSrc.LineStyle: Err.Clear
+
+        Dim oSrcLvl As Level
+        Set oSrcLvl = oSrc.Level
+        If Err.Number = 0 And Not oSrcLvl Is Nothing Then
+            Set oDst.Level = NiveauOuCreation(oSrcLvl)
+        End If
+        Err.Clear
+        On Error GoTo 0
+        Exit Sub
+    End If
+
+    If oSettings.oElements.bActifs Then Exit Sub
 
     On Error Resume Next
-    oDst.Color = oSrc.Color: Err.Clear
-    oDst.LineWeight = oSrc.LineWeight: Err.Clear
-    Set oDst.LineStyle = oSrc.LineStyle: Err.Clear
-
-    Dim sNiveau As String
-    sNiveau = oSrc.Level.Name
-    If Err.Number = 0 And Len(sNiveau) > 0 Then
-        Set oDst.Level = NiveauOuCreation(sNiveau)
+    oDst.Color = oSettings.oElements.Couleur: Err.Clear
+    oDst.LineWeight = oSettings.oElements.Epaisseur: Err.Clear
+    If Len(oSettings.oElements.NomStyleLigne) > 0 Then
+        ' Item par defaut de LineStyles : nom, index, ou "#" + numero de style
+        ' (styles standard 0-7 compris) -- cf. Item_Property.
+        Dim sCle As String
+        sCle = oSettings.oElements.NomStyleLigne
+        If IsNumeric(sCle) Then sCle = "#" & sCle
+        Dim oLS As LineStyle
+        Set oLS = ActiveDesignFile.LineStyles(sCle)
+        If Not oLS Is Nothing Then Set oDst.LineStyle = oLS
     End If
+    Err.Clear
+    Set oDst.Level = ResolverNiveau(oSettings.oElements.NomNiveau)
     Err.Clear
     On Error GoTo 0
 End Sub
@@ -784,15 +789,30 @@ End Sub
 '------------------------------------------------------------------------------
 ' Niveau par nom dans le fichier actif ; cree s'il n'existe pas (la source
 ' vient d'une reference dont les niveaux ne sont pas forcement presents).
-Private Function NiveauOuCreation(sNiveau As String) As Level
+' PIEGE : AddNewLevel seul ne suffit pas -- sans Levels.Rewrite, le niveau
+' cree est perdu a la fermeture du fichier (element ensuite oriente vers un
+' niveau inexistant a la reouverture). Copie aussi ElementColor/
+' ElementLineWeight du niveau source pour que la symbologie ByLevel suive.
+Private Function NiveauOuCreation(oSrcLvl As Level) As Level
     Set NiveauOuCreation = ActiveSettings.Level
+    If oSrcLvl Is Nothing Then Exit Function
 
     On Error Resume Next
+    Dim sNiveau As String
+    sNiveau = oSrcLvl.Name
+    If Err.Number <> 0 Or Len(sNiveau) = 0 Then Err.Clear: Exit Function
+
     Dim oLvl As Level
     Set oLvl = ActiveDesignFile.Levels(sNiveau)
     If oLvl Is Nothing Then
         Err.Clear
         Set oLvl = ActiveDesignFile.AddNewLevel(sNiveau)
+        If Not oLvl Is Nothing Then
+            oLvl.ElementColor = oSrcLvl.ElementColor: Err.Clear
+            oLvl.ElementLineWeight = oSrcLvl.ElementLineWeight: Err.Clear
+            ActiveDesignFile.Levels.Rewrite
+            Err.Clear
+        End If
     End If
     Err.Clear
     On Error GoTo 0
@@ -803,6 +823,8 @@ End Function
 '------------------------------------------------------------------------------
 ' Niveau par nom ou numero ; chaine vide = niveau actif.
 ' Cree le niveau s'il n'existe pas (meme logique que NiveauOuCreation).
+' PIEGE : AddNewLevel seul ne suffit pas -- sans Levels.Rewrite, le niveau
+' cree est perdu a la fermeture du fichier.
 Private Function ResolverNiveau(sNiveau As String) As Level
     Set ResolverNiveau = ActiveSettings.Level
     If sNiveau = "" Then Exit Function
@@ -821,6 +843,10 @@ Private Function ResolverNiveau(sNiveau As String) As Level
     If oLvl Is Nothing Then
         Err.Clear
         Set oLvl = ActiveDesignFile.AddNewLevel(sNiveau)
+        If Not oLvl Is Nothing Then
+            ActiveDesignFile.Levels.Rewrite
+            Err.Clear
+        End If
     End If
     Err.Clear
     On Error GoTo 0
