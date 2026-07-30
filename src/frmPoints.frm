@@ -43,6 +43,8 @@ Private WithEvents txtCouleurCercle As MSForms.TextBox
 Attribute txtCouleurCercle.VB_VarHelpID = -1
 Private WithEvents cmbNiveauCercle As MSForms.ComboBox
 Attribute cmbNiveauCercle.VB_VarHelpID = -1
+Private WithEvents chkCerclePlein As MSForms.CheckBox
+Attribute chkCerclePlein.VB_VarHelpID = -1
 ' --- Texte altitude ---
 Private WithEvents chkCreerTexte As MSForms.CheckBox
 Attribute chkCreerTexte.VB_VarHelpID = -1
@@ -79,7 +81,7 @@ Private Sub ConstruireControles()
 
     Me.Caption = "Trans3D - Points"
     Me.Width = 212
-    Me.Height = 434
+    Me.Height = 448
 
     Dim dY As Double
     dY = 6
@@ -89,7 +91,7 @@ Private Sub ConstruireControles()
     Set fraCercle = Me.Controls.Add("Forms.Frame.1", "fraCercle")
     fraCercle.Caption = "Cercle repere (au Z reel)"
     fraCercle.Left = 6: fraCercle.Top = dY
-    fraCercle.Width = 192: fraCercle.Height = 86
+    fraCercle.Width = 192: fraCercle.Height = 100
 
     Set chkCreerCercle = fraCercle.Controls.Add("Forms.CheckBox.1", "chkCreerCercle")
     chkCreerCercle.Caption = "Creer le cercle"
@@ -111,7 +113,12 @@ Private Sub ConstruireControles()
     cmbNiveauCercle.Left = 56: cmbNiveauCercle.Top = 62
     cmbNiveauCercle.Width = 130: cmbNiveauCercle.Height = 16
 
-    dY = dY + 92
+    Set chkCerclePlein = fraCercle.Controls.Add("Forms.CheckBox.1", "chkCerclePlein")
+    chkCerclePlein.Caption = "Plein (rempli)"
+    chkCerclePlein.Left = 6: chkCerclePlein.Top = 80
+    chkCerclePlein.Width = 180: chkCerclePlein.Height = 14
+
+    dY = dY + 106
 
     ' --- Cadre Texte altitude -------------------------------------------------
     Dim fraTexte As MSForms.Frame
@@ -215,6 +222,7 @@ Sub Initialiser(oSettings As CSettings)
     txtCouleurCercle.Text = CStr(m_oSettings.oCercle.Couleur)
     RemplirNiveaux cmbNiveauCercle
     PositionnerNiveau cmbNiveauCercle, m_oSettings.oCercle.NomNiveau
+    chkCerclePlein.Value = m_oSettings.oCercle.Plein
 
     ' Texte altitude
     chkCreerTexte.Value = m_oSettings.bTexteAZero
@@ -377,6 +385,12 @@ Private Sub cmbNiveauCercle_Change()
     If m_bInit Then Exit Sub
     If m_oSettings Is Nothing Then Exit Sub
     m_oSettings.oCercle.NomNiveau = ExtraireNiveau(cmbNiveauCercle.Text)
+End Sub
+
+Private Sub chkCerclePlein_Change()
+    If m_bInit Then Exit Sub
+    If m_oSettings Is Nothing Then Exit Sub
+    m_oSettings.oCercle.Plein = (chkCerclePlein.Value = True)
 End Sub
 
 '==============================================================================

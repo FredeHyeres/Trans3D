@@ -492,6 +492,7 @@ Sub CreerPointCote(ByVal dXpt As Double, ByVal dYpt As Double, _
                           Matrix3dIdentity())
         If Not oCercle Is Nothing Then
             oCercle.Color = oSettings.oCercle.Couleur
+            AppliquerRemplissageCercle oCercle, oSettings
             Set oCercle.Level = ResolverNiveau(oSettings.oCercle.NomNiveau)
             Err.Clear
             ActiveModelReference.AddElement oCercle
@@ -517,6 +518,21 @@ Sub CreerPointCote(ByVal dXpt As Double, ByVal dYpt As Double, _
     On Error GoTo 0
 End Sub
 
+'------------------------------------------------------------------------------
+' Applique l'attribut plein/vide du cercle repere (Couleur sert aussi de
+' couleur de remplissage). Reutilise pour la creation definitive et l'apercu
+' dynamique.
+Public Sub AppliquerRemplissageCercle(oCercle As EllipseElement, oSettings As CSettings)
+    On Error Resume Next
+    If oSettings.oCercle.Plein Then
+        oCercle.FillMode = msdFillModeFilled
+        oCercle.FillColor = oSettings.oCercle.Couleur
+    Else
+        oCercle.FillMode = msdFillModeNotFilled
+    End If
+    Err.Clear
+    On Error GoTo 0
+End Sub
 
 '==============================================================================
 ' Apercus dynamiques (appeles dans IPrimitiveCommandEvents_Dynamics)
@@ -575,6 +591,7 @@ Sub DessinPointCoteDyn(ByVal DrawMode As MsdDrawingMode, _
                           oSettings.oCercle.Rayon, oSettings.oCercle.Rayon, _
                           Matrix3dIdentity())
         oCercle.Color = oSettings.oCercle.Couleur
+        AppliquerRemplissageCercle oCercle, oSettings
         oCercle.Redraw DrawMode
     End If
 
